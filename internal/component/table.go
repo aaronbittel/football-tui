@@ -1,4 +1,4 @@
-package main
+package component
 
 import (
 	"fmt"
@@ -6,26 +6,7 @@ import (
 	"unicode/utf8"
 )
 
-// squareTopLeft     = "┌"
-// squareTopRight    = "┐"
-// squareBottomLeft  = "└"
-// squareBottomRight = "┘"
-//
-// roundedTopLeft     = "╭"
-// roundedTopRight    = "╮"
-// roundedBottomLeft  = "╰"
-// roundedBottomRight = "╯"
-//
-// horizontalLine = "─"
-// verticalLine   = "│"
-
-const (
-	squareDownHorizontal = "┬"
-	squareRightVertial   = "├"
-	squareLeftVertial    = "┤"
-	squareUpHorizontal   = "┴"
-	squareCross          = "┼"
-)
+const ()
 
 const sampleTable = `
 ┌───────┬─────┬─────┬────────┐
@@ -45,6 +26,8 @@ const bubbleteaTable = `
 type Table struct {
 	headers        []Header
 	rows           [][]string
+	row            int
+	col            int
 	minLengths     []int
 	padding        int
 	seperator      bool
@@ -75,6 +58,16 @@ func NewHeader(text string, centered bool) Header {
 		text:     text,
 		centered: centered,
 	}
+}
+
+func (t *Table) At(row, col int) *Table {
+	t.row = row
+	t.col = col
+	return t
+}
+
+func (t Table) Pos() (height, width int) {
+	return t.row, t.col
 }
 
 func (t *Table) AddRow(row []string) {

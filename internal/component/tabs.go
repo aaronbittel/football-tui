@@ -1,4 +1,4 @@
-package main
+package component
 
 import (
 	"fmt"
@@ -13,7 +13,9 @@ const (
 
 type Tabs struct {
 	headers  []string
-	selected int
+	Selected int
+	row      int
+	col      int
 }
 
 func NewTabs(headers ...string) *Tabs {
@@ -37,7 +39,7 @@ func (t Tabs) String() string {
 
 	b.WriteString(verticalLine)
 	for i, h := range t.headers {
-		if t.selected == i {
+		if t.Selected == i {
 			b.WriteString(reset)
 		}
 		b.WriteString(fmt.Sprintf(" %s %s", h, reset))
@@ -59,12 +61,37 @@ func (t Tabs) String() string {
 	return b.String()
 }
 
-func (t *Tabs) SetTab(i int) *Tabs {
+func (t *Tabs) Select(i int) *Tabs {
 	if i < 0 || i >= len(t.headers) {
 		return t
 	}
-	t.selected = i
+	t.Selected = i
 	return t
+}
+
+func (t *Tabs) Next() {
+	t.Selected++
+	if t.Selected >= len(t.headers) {
+		t.Selected = 0
+	}
+}
+
+func (b *Tabs) Lines() []string {
+	return strings.Split(b.String(), "\n")
+}
+
+func (t *Tabs) GetSelected() string {
+	return t.headers[t.Selected]
+}
+
+func (t *Tabs) At(row, col int) *Tabs {
+	t.row = row
+	t.col = col
+	return t
+}
+
+func (t *Tabs) Pos() (row, col int) {
+	return t.row, t.col
 }
 
 func repeat(s string, i int) string {

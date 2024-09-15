@@ -1,8 +1,7 @@
-package main
+package component
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -23,6 +22,8 @@ const (
 )
 
 type Box struct {
+	width          int
+	height         int
 	row            int
 	col            int
 	messages       []string
@@ -73,6 +74,11 @@ func NewBox(messages ...string) *Box {
 		messages: messages,
 		padding:  NewPadding(0, 1),
 	}
+}
+
+func (b *Box) Update(messages ...string) *Box {
+	b.messages = messages
+	return b
 }
 
 func (b *Box) String() string {
@@ -132,7 +138,7 @@ func (b *Box) String() string {
 	}
 
 	for _, message := range b.messages {
-		mLen := utf8.RuneCountInString(StripAnsi(message))
+		mLen := StringLen(message)
 		out.WriteString(colorize(verticalLine))
 		out.WriteString(strings.Repeat(" ", b.padding.left))
 		if !b.centeredText {
@@ -170,6 +176,16 @@ func (b *Box) String() string {
 	return out.String()
 }
 
+func (b *Box) Lines() []string {
+	return strings.Split(b.String(), "\n")
+}
+
+func (b *Box) At(row, col int) *Box {
+	b.row = row
+	b.col = col
+	return b
+}
+
 func (b *Box) WithTitle(title string) *Box {
 	b.title = fmt.Sprintf(" %s ", title)
 	return b
@@ -200,6 +216,15 @@ func (b *Box) WithColoredBorder(color string) *Box {
 	return b
 }
 
+func (b *Box) WithSize(width, height int) *Box {
+	if width <= 5 || height <= 5 {
+		return b
+	}
+	b.width = width
+	b.height = height
+	return b
+}
+
 func MaxLength(messages []string) int {
 	maxLength := 0
 	for _, m := range messages {
@@ -211,10 +236,15 @@ func MaxLength(messages []string) int {
 	return maxLength
 }
 
-// REFERENCE: https://github.com/acarl005/stripansi/blob/master/stripansi.go
-func StripAnsi(str string) string {
-	const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+func (b Box) Pos() (row, col int) {
+	return b.row, b.col
+}
 
-	re := regexp.MustCompile(ansi)
-	return re.ReplaceAllString(str, "")
+func Clear(c Clearer) {
+	height, width := Mask(c)
+	row, col := c.Pos()
+	for i := range height {
+		moveCursor(row+i, col)
+		fmt.Print(strings.Repeat(" ", width))
+	}
 }

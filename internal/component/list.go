@@ -1,4 +1,4 @@
-package main
+package component
 
 import (
 	"strings"
@@ -12,8 +12,10 @@ const (
 
 type List struct {
 	items    []string
-	selected int
+	Selected int
 	padding  Padding
+	row      int
+	col      int
 }
 
 func NewList(items ...string) *List {
@@ -35,14 +37,14 @@ func (l *List) String() string {
 	}
 
 	for i, item := range l.items {
-		if i == l.selected {
+		if i == l.Selected {
 			b.WriteString(bgRedFgWhite)
 		}
 		b.WriteString(strings.Repeat(" ", l.padding.left))
 		b.WriteString(item)
 		b.WriteString(strings.Repeat(" ", maxLen-utf8.RuneCountInString(item)))
 		b.WriteString(strings.Repeat(" ", l.padding.right))
-		if i == l.selected {
+		if i == l.Selected {
 			b.WriteString(reset)
 		}
 		b.WriteString("\n")
@@ -51,7 +53,36 @@ func (l *List) String() string {
 	return b.String()
 }
 
+func (l *List) At(row, col int) *List {
+	l.row = row
+	l.col = col
+	return l
+}
+
+func (l *List) Pos() (row, col int) {
+	return l.row, l.col
+}
+
+func (b *List) Lines() []string {
+	return strings.Split(b.String(), "\n")
+}
+
+func (l *List) Next() {
+	if l.Selected+1 < len(l.items) {
+		l.Selected++
+	}
+}
+
+func (l *List) Prev() {
+	if l.Selected-1 < 0 {
+		return
+	}
+	l.Selected--
+	Clear(l)
+	Print(l)
+}
+
 func (l *List) Select(i int) *List {
-	l.selected = i
+	l.Selected = i
 	return l
 }
