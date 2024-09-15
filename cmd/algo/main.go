@@ -5,29 +5,50 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
-	"syscall"
-	component "tui/internal/component"
+	"slices"
+	"strings"
+	"time"
+	algo "tui/internal/algorithms"
+	"tui/internal/component"
 	utils "tui/internal/term-utils"
 
 	"golang.org/x/term"
 )
 
-func main() {
-	utils.Start()
-	fd := int(syscall.Stdin)
+func toColString(nums []int) string {
+	var b strings.Builder
 
-	oldState, err := term.MakeRaw(fd)
+	m := slices.Max(nums)
+	spaces := len(fmt.Sprint(m))
+	var char string
+
+	for i := m; i >= 1; i-- {
+		for _, n := range nums {
+			if n >= i {
+				char = utils.FullBlock
+			} else {
+				char = " "
+			}
+			b.WriteString(char + strings.Repeat(" ", spaces))
+		}
+		b.WriteString("\n")
+	}
+
+	for _, n := range nums {
+		s := spaces - len(fmt.Sprint(n)) + 1
+		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
+	}
+	return b.String()
+}
+
+func main() {
+	fd, oldState, err := utils.Start()
 	if err != nil {
-		fmt.Println("Error setting raw mode:", err)
-		return
+		fmt.Println("error initializing raw terminal", err)
+		os.Exit(1)
 	}
 	defer term.Restore(fd, oldState)
 	defer utils.TearDown()
-
-	// if err != nil {
-	// 	fmt.Println("Error getting terminal size", err)
-	// 	return
-	// }
 
 	box := component.NewBox("Terminal Algorithm Visualizer").
 		WithRoundedCorners().
@@ -54,13 +75,13 @@ func main() {
 		{"SampleHashSet1", "SampleHashSet2", "SampleHashSet3"},
 	}
 
-	nums := []int{4, 2, 8, 1, 27, 12, 10, 7, 5, 6, 23}
-	graph := component.NewGraph(nums).At(9, 30)
+	nums := []int{4, 12, 1, 6, 13, 8, 11, 7, 2, 9, 3, 5}
+	gen := component.NewGeneric(toColString(nums)).At(10, 25)
 
+	component.Print(gen)
 	component.Print(box)
 	component.Print(tabs)
 	component.Print(list)
-	component.Print(graph)
 
 	reader := bufio.NewReader(os.Stdin)
 	running := true
@@ -84,12 +105,6 @@ func main() {
 			list.Selected = 0
 			component.Print(list)
 
-			if tabs.Selected > 1 {
-				component.Clear(graph)
-			} else {
-				component.Update(graph)
-			}
-
 		case 'j':
 			list.Next()
 			component.Update(list)
@@ -98,14 +113,6 @@ func main() {
 				break
 			}
 
-			component.Clear(graph)
-			newNums := make([]int, len(nums))
-			for i := range len(nums) {
-				newNums[i] = rand.IntN(30) + 1
-			}
-			graph = component.NewGraph(newNums).At(9, 30)
-			component.Print(graph)
-
 		case 'k':
 			list.Prev()
 			component.Update(list)
@@ -113,15 +120,22 @@ func main() {
 			if tabs.Selected > 1 {
 				break
 			}
+		case 13:
+			if tabs.Selected == 0 && list.Selected == 0 {
 
-			component.Clear(graph)
-			newNums := make([]int, len(nums))
-			for i := range len(nums) {
-				newNums[i] = rand.IntN(30) + 1
+				numsCh := make(chan []int)
+				go algo.BubbleSort(numsCh, nums)
+
+				go func() {
+					for n := range numsCh {
+						time.Sleep(time.Millisecond * 300)
+						gen.Update(toColString(n))
+					}
+				}()
+
 			}
-			graph = component.NewGraph(newNums).At(9, 30)
-			component.Print(graph)
 
+			//
 			//
 			// 		case 'p':
 			// 			Print(box)

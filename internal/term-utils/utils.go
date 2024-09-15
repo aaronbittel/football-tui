@@ -1,6 +1,11 @@
 package term_utils
 
-import "fmt"
+import (
+	"fmt"
+	"syscall"
+
+	"golang.org/x/term"
+)
 
 func MoveCursorDown() {
 	MoveCursorLeft()
@@ -36,6 +41,10 @@ func MoveCursor(row, col int) {
 	fmt.Printf("\033[%d;%dH", row, col)
 }
 
+func GetSize(fd int) (rows, cols int, err error) {
+	return term.GetSize(fd)
+}
+
 func TearDown() {
 	fmt.Print(Reset)
 	MoveCursor(0, 0)
@@ -43,8 +52,13 @@ func TearDown() {
 	ShowCursor()
 }
 
-func Start() {
+func Start() (fd int, oldState *term.State, err error) {
 	HideCursor()
 	ClearScreen()
 	MoveCursor(1, 1)
+
+	fd = int(syscall.Stdin)
+	oldState, err = term.MakeRaw(fd)
+
+	return fd, oldState, err
 }
