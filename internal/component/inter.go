@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -46,7 +47,7 @@ func Mask(m Masker) (height, width int) {
 func Print(s Printer) {
 	row, col := s.Pos()
 	for i, s := range strings.Split(s.String(), "\n") {
-		moveCursor(row+i, col)
+		utils.MoveCursor(row+i, col)
 		fmt.Print(s)
 	}
 }
@@ -54,51 +55,4 @@ func Print(s Printer) {
 func Update(u Updater) {
 	Clear(u)
 	Print(u)
-}
-
-func moveCursorDown() {
-	moveCursorLeft()
-	fmt.Print("\033[B")
-}
-
-func moveCursorUp() {
-	moveCursorLeft()
-	fmt.Print("\033[A")
-}
-
-func moveCursorRight() {
-	fmt.Print("\033[C")
-}
-
-func moveCursorLeft() {
-	fmt.Print("\033[D")
-}
-
-func hideCursor() {
-	fmt.Print("\033[?25l")
-}
-
-func showCursor() {
-	fmt.Print("\033[?25h")
-}
-
-func ClearScreen() {
-	fmt.Print("\033[2J")
-}
-
-func moveCursor(row, col int) {
-	fmt.Printf("\033[%d;%dH", row, col)
-}
-
-func TearDown() {
-	fmt.Print(reset)
-	moveCursor(0, 0)
-	ClearScreen()
-	showCursor()
-}
-
-func Start() {
-	hideCursor()
-	ClearScreen()
-	moveCursor(1, 1)
 }

@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
+	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -32,7 +33,7 @@ func (t Tabs) String() string {
 	for i, h := range t.headers {
 		b.WriteString(repeat(horizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(squareDownHorizontal)
+			b.WriteString(utils.SquareDownHorizontal)
 		}
 	}
 	b.WriteString(squareTopRight + "\n")
@@ -40,9 +41,9 @@ func (t Tabs) String() string {
 	b.WriteString(verticalLine)
 	for i, h := range t.headers {
 		if t.Selected == i {
-			b.WriteString(reset)
+			b.WriteString(utils.Reset)
 		}
-		b.WriteString(fmt.Sprintf(" %s %s", h, reset))
+		b.WriteString(fmt.Sprintf(" %s %s", h, utils.Reset))
 		b.WriteString(lightgray)
 		b.WriteString(verticalLine)
 	}
@@ -52,11 +53,11 @@ func (t Tabs) String() string {
 	for i, h := range t.headers {
 		b.WriteString(repeat(horizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(squareUpHorizontal)
+			b.WriteString(utils.SquareUpHorizontal)
 		}
 	}
 	b.WriteString(squareBottomRight)
-	b.WriteString(reset)
+	b.WriteString(utils.Reset)
 
 	return b.String()
 }

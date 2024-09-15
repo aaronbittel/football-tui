@@ -2,6 +2,7 @@ package component
 
 import (
 	"strings"
+	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -45,7 +46,7 @@ func (l *List) String() string {
 		b.WriteString(strings.Repeat(" ", maxLen-utf8.RuneCountInString(item)))
 		b.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
-			b.WriteString(reset)
+			b.WriteString(utils.Reset)
 		}
 		b.WriteString("\n")
 	}

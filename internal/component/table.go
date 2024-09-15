@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
+	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -151,15 +152,15 @@ func (t Table) createRow(idx int) string {
 
 func (t Table) createSeperator() string {
 	b := new(strings.Builder)
-	b.WriteString(squareRightVertial)
+	b.WriteString(utils.SquareRightVertial)
 
 	for i, l := range t.minLengths {
 		b.WriteString(strings.Repeat(horizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(squareCross)
+			b.WriteString(utils.SquareCross)
 			continue
 		}
-		b.WriteString(squareLeftVertial)
+		b.WriteString(utils.SquareLeftVertial)
 	}
 
 	return b.String() + "\n"
@@ -182,7 +183,7 @@ func (t Table) createBottomLine() string {
 	for i, l := range t.minLengths {
 		b.WriteString(strings.Repeat(horizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(squareUpHorizontal)
+			b.WriteString(utils.SquareUpHorizontal)
 			continue
 		}
 		b.WriteString(bottomRight)
@@ -225,7 +226,7 @@ func (t Table) createTopLine() string {
 	for i := range t.headers {
 		b.WriteString(strings.Repeat(horizontalLine, t.minLengths[i]+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(squareDownHorizontal)
+			b.WriteString(utils.SquareDownHorizontal)
 			continue
 		}
 		b.WriteString(topRight)

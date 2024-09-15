@@ -7,12 +7,13 @@ import (
 	"os"
 	"syscall"
 	component "tui/internal/component"
+	utils "tui/internal/term-utils"
 
 	"golang.org/x/term"
 )
 
 func main() {
-	component.Start()
+	utils.Start()
 	fd := int(syscall.Stdin)
 
 	oldState, err := term.MakeRaw(fd)
@@ -21,7 +22,7 @@ func main() {
 		return
 	}
 	defer term.Restore(fd, oldState)
-	defer component.TearDown()
+	defer utils.TearDown()
 
 	// if err != nil {
 	// 	fmt.Println("Error getting terminal size", err)
@@ -35,7 +36,13 @@ func main() {
 	tabs := component.NewTabs("Sorting", "Searching", "Graph", "Stack", "Array", "HashSet").
 		At(5, 20)
 
-	list := component.NewList("BubbleSort", "QuickSort", "InsertionSort", "SelectionSort", "HeapSort", "MergeSort").
+	list := component.NewList(
+		"BubbleSort",
+		"QuickSort",
+		"InsertionSort",
+		"SelectionSort",
+		"HeapSort",
+		"MergeSort").
 		At(9, 2)
 
 	algorithms := [][]string{
@@ -66,12 +73,11 @@ func main() {
 		}
 
 		switch b {
-		case 'q', component.CtrlC:
+		case 'q', utils.CtrlC:
 			running = false
 		case '\t':
 			tabs.Next()
-			component.Clear(tabs)
-			component.Print(tabs)
+			component.Update(tabs)
 
 			component.Clear(list)
 			list = component.NewList(algorithms[tabs.Selected]...).At(9, 2)
@@ -81,14 +87,12 @@ func main() {
 			if tabs.Selected > 1 {
 				component.Clear(graph)
 			} else {
-				component.Clear(graph)
-				component.Print(graph)
+				component.Update(graph)
 			}
 
 		case 'j':
 			list.Next()
-			component.Clear(list)
-			component.Print(list)
+			component.Update(list)
 
 			if tabs.Selected > 1 {
 				break
@@ -104,8 +108,7 @@ func main() {
 
 		case 'k':
 			list.Prev()
-			component.Clear(list)
-			component.Print(list)
+			component.Update(list)
 
 			if tabs.Selected > 1 {
 				break

@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
+	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -83,7 +84,7 @@ func (b *Box) Update(messages ...string) *Box {
 
 func (b *Box) String() string {
 	colorize := func(s string) string {
-		return fmt.Sprintf("%s%s%s", b.borderColor, s, reset)
+		return fmt.Sprintf("%s%s%s", b.borderColor, s, utils.Reset)
 	}
 
 	multiColorize := func(strs ...string) string {
@@ -92,7 +93,7 @@ func (b *Box) String() string {
 		for _, s := range strs {
 			out.WriteString(s)
 		}
-		out.WriteString(reset)
+		out.WriteString(utils.Reset)
 		return out.String()
 	}
 
@@ -244,7 +245,7 @@ func Clear(c Clearer) {
 	height, width := Mask(c)
 	row, col := c.Pos()
 	for i := range height {
-		moveCursor(row+i, col)
+		utils.MoveCursor(row+i, col)
 		fmt.Print(strings.Repeat(" ", width))
 	}
 }

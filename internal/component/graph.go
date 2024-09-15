@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	utils "tui/internal/term-utils"
 )
 
 type Graph struct {
@@ -28,7 +29,7 @@ func (g Graph) String() string {
 	for i := m; i >= 1; i-- {
 		for _, n := range g.nums {
 			if n >= i {
-				char = fullBlock
+				char = utils.FullBlock
 			} else {
 				char = " "
 			}
