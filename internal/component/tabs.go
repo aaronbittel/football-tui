@@ -71,10 +71,27 @@ func (t *Tabs) Select(i int) *Tabs {
 }
 
 func (t *Tabs) Next() {
+
+	t.moveToStartofWord()
+	fmt.Print(fmt.Sprintf("%s%s%s", lightgray, t.headers[t.Selected], utils.Reset))
+
 	t.Selected++
 	if t.Selected >= len(t.headers) {
 		t.Selected = 0
 	}
+
+	t.moveToStartofWord()
+	fmt.Print(fmt.Sprintf("%s%s", utils.Reset, t.headers[t.Selected]))
+
+}
+
+func (t Tabs) moveToStartofWord() {
+	col := t.col + 2
+	for i := range t.Selected {
+		col += StringLen(t.headers[i]) + 3
+	}
+
+	utils.MoveCursor(t.row+1, col)
 }
 
 func (b *Tabs) Lines() []string {

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"strings"
 	utils "tui/internal/term-utils"
 	"unicode/utf8"
@@ -17,6 +18,7 @@ type List struct {
 	padding  Padding
 	row      int
 	col      int
+	maxLen   int
 }
 
 func NewList(items ...string) *List {
@@ -29,11 +31,10 @@ func NewList(items ...string) *List {
 func (l *List) String() string {
 	b := new(strings.Builder)
 
-	maxLen := 0
 	for _, item := range l.items {
 		length := utf8.RuneCountInString(item)
-		if length > maxLen {
-			maxLen = length
+		if length > l.maxLen {
+			l.maxLen = length
 		}
 	}
 
@@ -43,7 +44,7 @@ func (l *List) String() string {
 		}
 		b.WriteString(strings.Repeat(" ", l.padding.left))
 		b.WriteString(item)
-		b.WriteString(strings.Repeat(" ", maxLen-utf8.RuneCountInString(item)))
+		b.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
 		b.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
 			b.WriteString(utils.Reset)
@@ -69,18 +70,47 @@ func (b *List) Lines() []string {
 }
 
 func (l *List) Next() {
-	if l.Selected+1 < len(l.items) {
-		l.Selected++
+	if l.Selected+1 >= len(l.items) {
+		return
 	}
+
+	l.removeHighlight()
+	l.Selected++
+	l.addHighlight()
+
+}
+
+func (l List) removeHighlight() {
+	utils.MoveCursor(l.row+l.Selected, l.col)
+	fmt.Print(strings.Repeat(" ", l.maxLen+l.padding.right+l.padding.left))
+
+	utils.MoveCursor(l.row+l.Selected, l.col)
+	item := l.items[l.Selected]
+	fmt.Print(strings.Repeat(" ", l.padding.left))
+	fmt.Print(item)
+	fmt.Print(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+	fmt.Print(strings.Repeat(" ", l.padding.right))
+}
+
+func (l List) addHighlight() {
+	utils.MoveCursor(l.row+l.Selected, l.col)
+	item := l.items[l.Selected]
+	fmt.Print(bgRedFgWhite)
+	fmt.Print(strings.Repeat(" ", l.padding.left))
+	fmt.Print(item)
+	fmt.Print(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+	fmt.Print(strings.Repeat(" ", l.padding.right))
+	fmt.Print(utils.Reset)
 }
 
 func (l *List) Prev() {
 	if l.Selected-1 < 0 {
 		return
 	}
+
+	l.removeHighlight()
 	l.Selected--
-	Clear(l)
-	Print(l)
+	l.addHighlight()
 }
 
 func (l *List) Select(i int) *List {
