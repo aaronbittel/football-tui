@@ -8,25 +8,36 @@ import (
 )
 
 type ColumnGraph struct {
-	column Column
-	row    int
-	col    int
+	column    Column
+	row       int
+	col       int
+	colParams columnParams
+}
+
+type columnParams struct {
+	maxVal int
+	spaces int
 }
 
 func NewColumnGraph(column Column) *ColumnGraph {
+	m := slices.Max(column.nums)
+	spaces := len(fmt.Sprint(m))
+
 	return &ColumnGraph{
 		column: column,
+		colParams: columnParams{
+			maxVal: m,
+			spaces: spaces,
+		},
 	}
 }
 
 func (c ColumnGraph) String() string {
 	var b strings.Builder
 
-	m := slices.Max(c.column.nums)
-	spaces := len(fmt.Sprint(m))
 	var char string
 
-	for row := m; row >= 1; row-- {
+	for row := c.colParams.maxVal; row >= 1; row-- {
 		for i, n := range c.column.nums {
 			if n >= row {
 				if color, found := c.column.colors[i]; found {
@@ -37,13 +48,13 @@ func (c ColumnGraph) String() string {
 			} else {
 				char = " "
 			}
-			b.WriteString(char + strings.Repeat(" ", spaces))
+			b.WriteString(char + strings.Repeat(" ", c.colParams.spaces))
 		}
 		b.WriteString("\n")
 	}
 
 	for _, n := range c.column.nums {
-		s := spaces - len(fmt.Sprint(n)) + 1
+		s := c.colParams.spaces - len(fmt.Sprint(n)) + 1
 		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
 	}
 	return b.String()
@@ -81,7 +92,8 @@ func (c *ColumnGraph) Update(column Column) {
 		// 	fmt.Print("X")
 		// }
 
-		utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
+		// -1 because the number underneath the columns counts into the height
+		utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*(c.colParams.spaces+1))
 		for range oldNums[i] {
 			fmt.Print(" ")
 			utils.MoveCursorDown()
@@ -92,7 +104,8 @@ func (c *ColumnGraph) Update(column Column) {
 		utils.MoveCursorLeft()
 		fmt.Print(newNums[i])
 
-		utils.MoveCursor(c.row+height-2, c.col+i*3)
+		// Move cursor to first column part
+		utils.MoveCursor(c.row+height-2, c.col+i*(c.colParams.spaces+1))
 		fmt.Print(newC[i])
 		for range newNums[i] {
 			fmt.Print(utils.FullBlock)

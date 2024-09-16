@@ -75,7 +75,7 @@ func main() {
 		{"SampleHashSet1", "SampleHashSet2", "SampleHashSet3"},
 	}
 
-	nums := []int{4, 12, 1, 6, 13, 8, 11, 7, 2, 9, 3, 5}
+	nums := []int{14, 4, 12, 1, 16, 6, 13, 8, 11, 17, 7, 15, 2, 9, 18, 3, 5, 10}
 	columnGraph := component.NewColumnGraph(component.NewColumn(nums, nil)).At(10, 25)
 
 	component.Print(columnGraph)
@@ -136,7 +136,7 @@ func main() {
 					defer close(doneCh)
 					for col := range columnCh {
 						columnGraph.Update(col)
-						time.Sleep(time.Millisecond * 800)
+						time.Sleep(time.Millisecond * 50)
 					}
 				}()
 
@@ -145,12 +145,16 @@ func main() {
 					fmt.Sprintf("%s%s%s", utils.Blue, utils.WhiteSquare+" Compare", utils.Reset),
 					fmt.Sprintf("%s%s%s", utils.Orange, utils.WhiteSquare+" Locked", utils.Reset),
 				}
+
+				_, cWidth := columnGraph.Mask()
+				cRow, cCol := columnGraph.Pos()
+				legendRow, legendCol := cRow, cCol+cWidth+5
+
 				legendBox := component.NewBox(legend...).
 					WithRoundedCorners().
 					WithTitle("Legend").
 					WithPadding(1, 2, 1, 2).
-					// WithSpace(1).
-					At(10, 70)
+					At(legendRow, legendCol)
 
 				component.Print(legendBox)
 
