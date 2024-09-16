@@ -76,9 +76,9 @@ func main() {
 	}
 
 	nums := []int{4, 12, 1, 6, 13, 8, 11, 7, 2, 9, 3, 5}
-	gen := component.NewGeneric(toColString(nums)).At(10, 25)
+	columnGraph := component.NewColumnGraph(component.NewColumn(nums, nil)).At(10, 25)
 
-	component.Print(gen)
+	component.Print(columnGraph)
 	component.Print(box)
 	component.Print(tabs)
 	component.Print(list)
@@ -98,7 +98,6 @@ func main() {
 			running = false
 		case '\t':
 			tabs.Next()
-			component.Update(tabs)
 
 			component.Clear(list)
 			list = component.NewList(algorithms[tabs.Selected]...).At(9, 2)
@@ -107,7 +106,6 @@ func main() {
 
 		case 'j':
 			list.Next()
-			component.Update(list)
 
 			if tabs.Selected > 1 {
 				break
@@ -115,7 +113,6 @@ func main() {
 
 		case 'k':
 			list.Prev()
-			component.Update(list)
 
 			if tabs.Selected > 1 {
 				break
@@ -123,14 +120,36 @@ func main() {
 		case 13:
 			if tabs.Selected == 0 && list.Selected == 0 {
 
-				numsCh := make(chan []int)
-				go algo.BubbleSort(numsCh, nums)
+				columnCh := make(chan component.Column)
+				go algo.BubbleSort(columnCh, columnGraph.Nums())
+
+				doneCh := make(chan struct{})
 
 				go func() {
-					for n := range numsCh {
-						time.Sleep(time.Millisecond * 300)
-						gen.Update(toColString(n))
+					defer close(doneCh)
+					for col := range columnCh {
+						columnGraph.Update(col)
+						time.Sleep(time.Millisecond * 200)
 					}
+				}()
+
+				legend := []string{
+					fmt.Sprintf("%s%s%s", utils.Green, utils.WhiteSquare+" Current", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Blue, utils.WhiteSquare+" Compare", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Orange, utils.WhiteSquare+" Locked", utils.Reset),
+				}
+				legendBox := component.NewBox(legend...).
+					WithRoundedCorners().
+					WithTitle("Legend").
+					WithPadding(1, 2, 1, 2).
+					// WithSpace(1).
+					At(10, 70)
+
+				component.Print(legendBox)
+
+				go func() {
+					<-doneCh
+					component.Clear(legendBox)
 				}()
 
 			}
