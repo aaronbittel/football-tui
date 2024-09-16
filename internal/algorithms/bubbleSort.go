@@ -1,17 +1,36 @@
 package algorithms
 
 import (
+	"maps"
 	"slices"
+
+	component "tui/internal/component"
+	utils "tui/internal/term-utils"
 )
 
-func BubbleSort(numsCh chan<- []int, nums []int) {
-	defer close(numsCh)
+func main() {
+}
+
+func BubbleSort(columnCh chan<- component.Column, nums []int) {
+	defer close(columnCh)
+
+	colors := make(map[int]string)
+
 	for i := len(nums) - 1; i >= 0; i-- {
 		for j := 0; j < i; j++ {
-			numsCh <- slices.Clone(nums)
+			colors[j] = utils.Green
+			colors[j+1] = utils.Blue
+			columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(colors))
 			if nums[j] > nums[j+1] {
 				nums[j], nums[j+1] = nums[j+1], nums[j]
+				colors[j] = utils.Blue
+				colors[j+1] = utils.Green
+				columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(colors))
 			}
+			delete(colors, j)
+			delete(colors, j+1)
 		}
+		colors[i] = utils.Orange
 	}
+	columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(colors))
 }
