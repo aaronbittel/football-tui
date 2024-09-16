@@ -20,7 +20,6 @@ func NewColumnGraph(column Column) *ColumnGraph {
 }
 
 func (c ColumnGraph) String() string {
-
 	var b strings.Builder
 
 	m := slices.Max(c.column.nums)
@@ -51,9 +50,63 @@ func (c ColumnGraph) String() string {
 }
 
 func (c *ColumnGraph) Update(column Column) {
+	var (
+		oldNums   = c.column.nums
+		oldC      = c.column.colors
+		newNums   = column.nums
+		newC      = column.colors
+		height, _ = c.Mask()
+	)
+
+	for i := 0; i < len(oldNums); i++ {
+		if oldNums[i] == newNums[i] && oldC[i] == newC[i] {
+			continue
+		}
+
+		//TODO: Only replace the minimum number of characters
+
+		// if oldC[i] != newC[i] {
+		// 	newColor := newC[i]
+		// 	fmt.Print(newColor)
+		// 	utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
+		// 	for range oldNums[i] {
+		// 		fmt.Print(utils.FullBlock)
+		// 		utils.MoveCursorDown()
+		// 	}
+		// 	fmt.Print(utils.Reset)
+		// }
+		//
+		// if oldNums[i] != newNums[i] {
+		// 	utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
+		// 	fmt.Print("X")
+		// }
+
+		utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
+		for range oldNums[i] {
+			fmt.Print(" ")
+			utils.MoveCursorDown()
+		}
+		fmt.Print("  ")
+
+		utils.MoveCursorLeft()
+		utils.MoveCursorLeft()
+		fmt.Print(newNums[i])
+
+		utils.MoveCursor(c.row+height-2, c.col+i*3)
+		fmt.Print(newC[i])
+		for range newNums[i] {
+			fmt.Print(utils.FullBlock)
+			utils.MoveCursorUp()
+		}
+		fmt.Print(utils.Reset)
+		// for i := range height {
+		// 	utils.MoveCursor(c.row+i, c.col)
+		// 	fmt.Print("X")
+		// }
+		// fmt.Print("X")
+
+	}
 	c.column = column
-	Clear(c)
-	Print(c)
 }
 
 func (c ColumnGraph) Lines() []string {

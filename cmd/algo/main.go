@@ -86,6 +86,10 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	running := true
 
+	// FOR Partial Graph Update
+	columnCh := make(chan component.Column)
+	go algo.BubbleSort(columnCh, columnGraph.Nums())
+
 	for running {
 		b, err := reader.ReadByte()
 		if err != nil {
@@ -96,6 +100,9 @@ func main() {
 		switch b {
 		case 'q', utils.CtrlC:
 			running = false
+		case 't':
+			col := <-columnCh
+			columnGraph.Update(col)
 		case '\t':
 			tabs.Next()
 
@@ -129,7 +136,7 @@ func main() {
 					defer close(doneCh)
 					for col := range columnCh {
 						columnGraph.Update(col)
-						time.Sleep(time.Millisecond * 200)
+						time.Sleep(time.Millisecond * 800)
 					}
 				}()
 
