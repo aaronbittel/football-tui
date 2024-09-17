@@ -57,6 +57,11 @@ func (c ColumnGraph) String() string {
 		s := c.colParams.spaces - len(fmt.Sprint(n)) + 1
 		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
 	}
+
+	//HACK: Remove from line 30, col 30 to end of line (remove description)
+	utils.MoveCursor(30, 30)
+	fmt.Print("\033[0K")
+	fmt.Print(c.column.desc)
 	return b.String()
 }
 
@@ -144,15 +149,17 @@ func (c *ColumnGraph) At(row, col int) *ColumnGraph {
 type Column struct {
 	nums   []int
 	colors map[int]string
+	desc   string
 }
 
-func NewColumn(nums []int, colors map[int]string) Column {
+func NewColumn(nums []int, colors map[int]string, desc string) Column {
 	if colors == nil {
 		colors = make(map[int]string)
 	}
 	return Column{
 		nums:   nums,
 		colors: colors,
+		desc:   desc,
 	}
 }
 
