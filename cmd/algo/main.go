@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
-	"slices"
-	"strings"
 	"time"
 	algo "tui/internal/algorithms"
 	"tui/internal/component"
@@ -14,32 +12,6 @@ import (
 
 	"golang.org/x/term"
 )
-
-func toColString(nums []int) string {
-	var b strings.Builder
-
-	m := slices.Max(nums)
-	spaces := len(fmt.Sprint(m))
-	var char string
-
-	for i := m; i >= 1; i-- {
-		for _, n := range nums {
-			if n >= i {
-				char = utils.FullBlock
-			} else {
-				char = " "
-			}
-			b.WriteString(char + strings.Repeat(" ", spaces))
-		}
-		b.WriteString("\n")
-	}
-
-	for _, n := range nums {
-		s := spaces - len(fmt.Sprint(n)) + 1
-		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
-	}
-	return b.String()
-}
 
 func main() {
 	fd, oldState, err := utils.Start()
@@ -60,14 +32,13 @@ func main() {
 	list := component.NewList(
 		"BubbleSort",
 		"QuickSort",
-		"InsertionSort",
 		"SelectionSort",
 		"HeapSort",
 		"MergeSort").
 		At(9, 2)
 
 	algorithms := [][]string{
-		{"BubbleSort", "QuickSort", "InsertionSort", "SelectionSort", "HeapSort", "MergeSort"},
+		{"Bubblesort", "Quicksort", "selectionsort", "Heapsort", "Mergesort"},
 		{"Binary", "Linear"},
 		{"Breadth-First", "Depth-First"},
 		{"SampleStack1", "SampleStack2", "SampleStack3"},
@@ -76,7 +47,9 @@ func main() {
 	}
 
 	nums := []int{14, 4, 12, 1, 16, 6, 13, 8, 11, 17, 7, 15, 2, 9, 18, 3, 5, 10}
-	columnGraph := component.NewColumnGraph(component.NewColumn(nums, nil)).At(10, 25)
+	// nums := []int{4, 8, 2, 1, 6, 7, 3}
+	utils.MoveCursor(40, 79)
+	columnGraph := component.NewColumnGraph(component.NewColumn(nums, nil, "")).At(10, 25)
 
 	component.Print(columnGraph)
 	component.Print(box)
@@ -85,10 +58,6 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	running := true
-
-	// FOR Partial Graph Update
-	columnCh := make(chan component.Column)
-	go algo.BubbleSort(columnCh, columnGraph.Nums())
 
 	for running {
 		b, err := reader.ReadByte()
@@ -101,8 +70,8 @@ func main() {
 		case 'q', utils.CtrlC:
 			running = false
 		case 't':
-			col := <-columnCh
-			columnGraph.Update(col)
+			// col := <-columnCh
+			// columnGraph.Update(col)
 		case '\t':
 			tabs.Next()
 
@@ -126,43 +95,33 @@ func main() {
 			}
 		case 13:
 			if tabs.Selected == 0 && list.Selected == 0 {
-
-				columnCh := make(chan component.Column)
-				go algo.BubbleSort(columnCh, columnGraph.Nums())
-
-				doneCh := make(chan struct{})
-
-				go func() {
-					defer close(doneCh)
-					for col := range columnCh {
-						columnGraph.Update(col)
-						time.Sleep(time.Millisecond * 50)
-					}
-				}()
-
 				legend := []string{
 					fmt.Sprintf("%s%s%s", utils.Green, utils.WhiteSquare+" Current", utils.Reset),
 					fmt.Sprintf("%s%s%s", utils.Blue, utils.WhiteSquare+" Compare", utils.Reset),
 					fmt.Sprintf("%s%s%s", utils.Orange, utils.WhiteSquare+" Locked", utils.Reset),
 				}
 
-				_, cWidth := columnGraph.Mask()
-				cRow, cCol := columnGraph.Pos()
-				legendRow, legendCol := cRow, cCol+cWidth+5
+				handleGraph(columnGraph, algo.Bubblesort, time.Millisecond*200, legend)
 
-				legendBox := component.NewBox(legend...).
-					WithRoundedCorners().
-					WithTitle("Legend").
-					WithPadding(1, 2, 1, 2).
-					At(legendRow, legendCol)
+			} else if tabs.Selected == 0 && list.Selected == 2 {
 
-				component.Print(legendBox)
+				legend := []string{
+					fmt.Sprintf("%s%s%s", utils.Green, utils.WhiteSquare+" Current Lowest", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Blue, utils.WhiteSquare+" Compare", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Orange, utils.WhiteSquare+" Locked", utils.Reset),
+				}
 
-				go func() {
-					<-doneCh
-					component.Clear(legendBox)
-				}()
+				handleGraph(columnGraph, algo.Selectionsort, time.Millisecond*200, legend)
 
+			} else if tabs.Selected == 0 && list.Selected == 1 {
+
+				legend := []string{
+					fmt.Sprintf("%s%s%s", utils.Green, utils.WhiteSquare+" Pivot", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Blue, utils.WhiteSquare+" Compare", utils.Reset),
+					fmt.Sprintf("%s%s%s", utils.Orange, utils.WhiteSquare+" Locked", utils.Reset),
+				}
+
+				handleGraph(columnGraph, algo.Quicksort, time.Millisecond*400, legend)
 			}
 
 			//
@@ -217,4 +176,39 @@ func getRandomColor() string {
 	const colorCode = "\033[%dm"
 	r := rand.IntN(8) + 30
 	return fmt.Sprintf(colorCode, r)
+}
+
+type Algorithm func(chan<- component.Column, []int)
+
+func handleGraph(columnGraph *component.ColumnGraph, algo Algorithm, waitTime time.Duration, legend []string) {
+	columnCh := make(chan component.Column)
+	nums := columnGraph.Nums()
+	go algo(columnCh, nums)
+
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		for col := range columnCh {
+			columnGraph.Update(col)
+			time.Sleep(waitTime)
+		}
+	}()
+
+	_, cWidth := columnGraph.Mask()
+	cRow, cCol := columnGraph.Pos()
+	legendRow, legendCol := cRow, cCol+cWidth+7
+
+	legendBox := component.NewBox(legend...).
+		WithRoundedCorners().
+		WithTitle("Legend").
+		WithPadding(1, 2, 1, 2).
+		At(legendRow, legendCol)
+
+	component.Print(legendBox)
+
+	go func() {
+		<-doneCh
+		component.Clear(legendBox)
+	}()
 }
