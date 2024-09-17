@@ -7,21 +7,6 @@ import (
 	"unicode/utf8"
 )
 
-const (
-	squareTopLeft     = "┌"
-	squareTopRight    = "┐"
-	squareBottomLeft  = "└"
-	squareBottomRight = "┘"
-
-	roundedTopLeft     = "╭"
-	roundedTopRight    = "╮"
-	roundedBottomLeft  = "╰"
-	roundedBottomRight = "╯"
-
-	horizontalLine = "─"
-	verticalLine   = "│"
-)
-
 type Box struct {
 	width          int
 	height         int
@@ -99,17 +84,17 @@ func (b *Box) String() string {
 
 	var out strings.Builder
 	var (
-		topLeft     = squareTopLeft
-		topRight    = squareTopRight
-		bottomLeft  = squareBottomLeft
-		bottomRight = squareBottomRight
+		topLeft     = utils.SquareTopLeft
+		topRight    = utils.SquareTopRight
+		bottomLeft  = utils.SquareBottomLeft
+		bottomRight = utils.SquareBottomRight
 	)
 
 	if b.roundedCornors {
-		topLeft = roundedTopLeft
-		topRight = roundedTopRight
-		bottomLeft = roundedBottomLeft
-		bottomRight = roundedBottomRight
+		topLeft = utils.RoundedTopLeft
+		topRight = utils.RoundedTopRight
+		bottomLeft = utils.RoundedBottomLeft
+		bottomRight = utils.RoundedBottomRight
 	}
 
 	maxLength := MaxLength(b.messages)
@@ -121,9 +106,9 @@ func (b *Box) String() string {
 	out.WriteString(
 		multiColorize(
 			topLeft,
-			strings.Repeat(horizontalLine, spaceTitle),
+			strings.Repeat(utils.HorizontalLine, spaceTitle),
 			b.title,
-			strings.Repeat(horizontalLine, totalLength-titleLen-spaceTitle),
+			strings.Repeat(utils.HorizontalLine, totalLength-titleLen-spaceTitle),
 			topRight+"\n",
 		),
 	)
@@ -131,16 +116,16 @@ func (b *Box) String() string {
 	for range b.padding.top {
 		out.WriteString(
 			multiColorize(
-				verticalLine,
+				utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
-				verticalLine+"\n",
+				utils.VerticalLine+"\n",
 			),
 		)
 	}
 
 	for _, message := range b.messages {
 		mLen := StringLen(message)
-		out.WriteString(colorize(verticalLine))
+		out.WriteString(colorize(utils.VerticalLine))
 		out.WriteString(strings.Repeat(" ", b.padding.left))
 		if !b.centeredText {
 			rightSpace := maxLength - mLen
@@ -153,15 +138,15 @@ func (b *Box) String() string {
 			out.WriteString(strings.Repeat(" ", leftSpaceLen))
 		}
 		out.WriteString(strings.Repeat(" ", b.padding.right))
-		out.WriteString(colorize(verticalLine + "\n"))
+		out.WriteString(colorize(utils.VerticalLine + "\n"))
 	}
 
 	for range b.padding.bottom {
 		out.WriteString(
 			multiColorize(
-				verticalLine,
+				utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
-				verticalLine+"\n",
+				utils.VerticalLine+"\n",
 			),
 		)
 	}
@@ -169,7 +154,7 @@ func (b *Box) String() string {
 	out.WriteString(
 		multiColorize(
 			bottomLeft,
-			strings.Repeat(horizontalLine, maxLength+b.padding.left+b.padding.right),
+			strings.Repeat(utils.HorizontalLine, maxLength+b.padding.left+b.padding.right),
 			bottomRight,
 		),
 	)

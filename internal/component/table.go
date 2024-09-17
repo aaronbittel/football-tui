@@ -134,7 +134,7 @@ func (t Table) createRow(idx int) string {
 			item   = t.rows[idx][i]
 			length = utf8.RuneCountInString(item)
 		)
-		b.WriteString(verticalLine)
+		b.WriteString(utils.VerticalLine)
 		b.WriteString(strings.Repeat(" ", t.padding))
 		if t.headers[i].centered {
 			b.WriteString(centerText(item, l))
@@ -145,7 +145,7 @@ func (t Table) createRow(idx int) string {
 		b.WriteString(strings.Repeat(" ", t.padding))
 	}
 
-	b.WriteString(verticalLine)
+	b.WriteString(utils.VerticalLine)
 
 	return b.String() + "\n"
 }
@@ -155,7 +155,7 @@ func (t Table) createSeperator() string {
 	b.WriteString(utils.SquareRightVertial)
 
 	for i, l := range t.minLengths {
-		b.WriteString(strings.Repeat(horizontalLine, l+2*t.padding))
+		b.WriteString(strings.Repeat(utils.HorizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
 			b.WriteString(utils.SquareCross)
 			continue
@@ -170,18 +170,18 @@ func (t Table) createBottomLine() string {
 	b := new(strings.Builder)
 
 	var (
-		bottomLeft  = squareBottomLeft
-		bottomRight = squareBottomRight
+		bottomLeft  = utils.SquareBottomLeft
+		bottomRight = utils.SquareBottomRight
 	)
 
 	if t.roundedCorners {
-		bottomLeft = roundedBottomLeft
-		bottomRight = roundedBottomRight
+		bottomLeft = utils.RoundedBottomLeft
+		bottomRight = utils.RoundedBottomRight
 	}
 
 	b.WriteString(bottomLeft)
 	for i, l := range t.minLengths {
-		b.WriteString(strings.Repeat(horizontalLine, l+2*t.padding))
+		b.WriteString(strings.Repeat(utils.HorizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
 			b.WriteString(utils.SquareUpHorizontal)
 			continue
@@ -196,13 +196,13 @@ func (t Table) createHeading() string {
 	b := new(strings.Builder)
 
 	for i, h := range t.headers {
-		b.WriteString(verticalLine)
+		b.WriteString(utils.VerticalLine)
 		b.WriteString(strings.Repeat(" ", t.padding))
 		b.WriteString(h.text)
 		b.WriteString(strings.Repeat(" ", t.minLengths[i]-utf8.RuneCountInString(h.text)))
 		b.WriteString(strings.Repeat(" ", t.padding))
 		if i == len(t.headers)-1 {
-			b.WriteString(verticalLine)
+			b.WriteString(utils.VerticalLine)
 		}
 	}
 
@@ -213,18 +213,18 @@ func (t Table) createTopLine() string {
 	b := new(strings.Builder)
 
 	var (
-		topLeft  = squareTopLeft
-		topRight = squareTopRight
+		topLeft  = utils.SquareTopLeft
+		topRight = utils.SquareTopRight
 	)
 
 	if t.roundedCorners {
-		topLeft = roundedTopLeft
-		topRight = roundedTopRight
+		topLeft = utils.RoundedTopLeft
+		topRight = utils.RoundedTopRight
 	}
 
 	b.WriteString(topLeft)
 	for i := range t.headers {
-		b.WriteString(strings.Repeat(horizontalLine, t.minLengths[i]+2*t.padding))
+		b.WriteString(strings.Repeat(utils.HorizontalLine, t.minLengths[i]+2*t.padding))
 		if i != len(t.headers)-1 {
 			b.WriteString(utils.SquareDownHorizontal)
 			continue

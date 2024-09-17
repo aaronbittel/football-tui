@@ -29,34 +29,34 @@ func (t Tabs) String() string {
 	b := new(strings.Builder)
 
 	b.WriteString(lightgray)
-	b.WriteString(squareTopLeft)
+	b.WriteString(utils.SquareTopLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(horizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
 			b.WriteString(utils.SquareDownHorizontal)
 		}
 	}
-	b.WriteString(squareTopRight + "\n")
+	b.WriteString(utils.SquareTopRight + "\n")
 
-	b.WriteString(verticalLine)
+	b.WriteString(utils.VerticalLine)
 	for i, h := range t.headers {
 		if t.Selected == i {
 			b.WriteString(utils.Reset)
 		}
 		b.WriteString(fmt.Sprintf(" %s %s", h, utils.Reset))
 		b.WriteString(lightgray)
-		b.WriteString(verticalLine)
+		b.WriteString(utils.VerticalLine)
 	}
 	b.WriteString("\n")
 
-	b.WriteString(squareBottomLeft)
+	b.WriteString(utils.SquareBottomLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(horizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
 			b.WriteString(utils.SquareUpHorizontal)
 		}
 	}
-	b.WriteString(squareBottomRight)
+	b.WriteString(utils.SquareBottomRight)
 	b.WriteString(utils.Reset)
 
 	return b.String()

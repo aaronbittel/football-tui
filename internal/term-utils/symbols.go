@@ -1,5 +1,7 @@
 package term_utils
 
+import "fmt"
+
 const (
 	Reset = "\033[0m"
 
@@ -17,4 +19,21 @@ const (
 	SquareLeftVertial    = "┤"
 	SquareUpHorizontal   = "┴"
 	SquareCross          = "┼"
+
+	SquareTopLeft     = "┌"
+	SquareTopRight    = "┐"
+	SquareBottomLeft  = "└"
+	SquareBottomRight = "┘"
+
+	RoundedTopLeft     = "╭"
+	RoundedTopRight    = "╮"
+	RoundedBottomLeft  = "╰"
+	RoundedBottomRight = "╯"
+
+	HorizontalLine = "─"
+	VerticalLine   = "│"
 )
+
+func Colorize(s, color string) string {
+	return fmt.Sprintf("%s%s%s", color, s, Reset)
+}
