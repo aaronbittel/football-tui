@@ -45,6 +45,25 @@ func GetSize(fd int) (rows, cols int, err error) {
 	return term.GetSize(fd)
 }
 
+func SaveCursorPos() {
+	fmt.Print("\033[s")
+}
+
+func RestoreCursorPos() {
+	fmt.Print("\033[u")
+}
+
+func Debug(v ...any) {
+	SaveCursorPos()
+	MoveCursor(40, 1)
+	out := ""
+	for _, val := range v {
+		out += fmt.Sprintf("%v ", val)
+	}
+	fmt.Print(out)
+	RestoreCursorPos()
+}
+
 func TearDown() {
 	fmt.Print(Reset)
 	MoveCursor(0, 0)
