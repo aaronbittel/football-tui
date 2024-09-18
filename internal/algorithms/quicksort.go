@@ -12,44 +12,74 @@ func partition(
 	columnCh chan<- component.Column,
 	nums []int,
 	low, high int,
-	locked map[int]string,
+	colors map[int]string,
 ) int {
 	pivot := nums[high]
 	i := low - 1
 
-	locked[high] = utils.Green
+	for i := 0; i < len(nums); i++ {
+		if i >= low && i <= high {
+			continue
+		}
+
+		if colors[i] == utils.Orange {
+			continue
+		}
+		colors[i] = utils.Lightgray
+	}
+
+	colors[high] = utils.Green
 
 	for j := low; j < high; j++ {
-		locked[j] = utils.Blue
+		colors[j] = utils.Blue
 		columnCh <- component.NewColumn(
 			slices.Clone(nums),
-			maps.Clone(locked),
+			maps.Clone(colors),
 			fmt.Sprintf(
 				"Comparing %s to Pivot %s",
 				utils.Colorize(fmt.Sprintf("%d", nums[j]), utils.Blue),
-				utils.Colorize(fmt.Sprintf("%d", high), utils.Green),
+				utils.Colorize(fmt.Sprintf("%d", pivot), utils.Green),
 			),
 		)
 		if nums[j] < pivot {
 			i++
-			delete(locked, j)
+			delete(colors, j)
 			nums[i], nums[j] = nums[j], nums[i]
-			locked[i] = utils.Blue
+			colors[i] = utils.Blue
 			columnCh <- component.NewColumn(
 				slices.Clone(nums),
-				maps.Clone(locked),
-				"[Blue] is smaller than Pivot [Green] → Swap",
+				maps.Clone(colors),
+				fmt.Sprintf(
+					"Swap %s and %s because %s is smaller than Pivot %s",
+					utils.Colorize(fmt.Sprintf("%d", nums[i]), utils.Blue),
+					utils.Colorize(fmt.Sprintf("%d", nums[j]), utils.White),
+					utils.Colorize(fmt.Sprintf("%d", nums[i]), utils.Blue),
+					utils.Colorize(fmt.Sprintf("%d", pivot), utils.Green),
+				),
 			)
-			delete(locked, i)
+			delete(colors, i)
 		}
-		delete(locked, j)
+		delete(colors, j)
 	}
 
-	delete(locked, high)
+	delete(colors, high)
 	nums[i+1], nums[high] = nums[high], nums[i+1]
-	locked[i+1] = utils.Green
-	columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(locked), "Swap Pivot to correct position")
-	delete(locked, i+1)
+	colors[i+1] = utils.Green
+	columnCh <- component.NewColumn(
+		slices.Clone(nums),
+		maps.Clone(colors),
+		fmt.Sprintf("Swap Pivot %s to correct position", utils.Colorize(
+			fmt.Sprintf("%d", nums[i+1]),
+			utils.Green,
+		)),
+	)
+
+	for k, v := range colors {
+		if v != utils.Orange {
+			delete(colors, k)
+		}
+	}
+
 	return i + 1
 }
 
@@ -57,20 +87,39 @@ func quicksortHelper(
 	columnCh chan<- component.Column,
 	nums []int,
 	low, high int,
-	locked map[int]string,
+	colors map[int]string,
 ) {
 	if low >= high {
-		for i := high; i <= low; i++ {
-			locked[i] = utils.Orange
-		}
-		columnCh <- component.NewColumn(slices.Clone(nums), locked, "Mark numbers in correct position as locked")
+		//FIX: Implement Correct highlighting of Locked values
+
+		// utils.Debug("lowIdx", low, "highIdx", high, "lowVal", nums[low], "highVal", nums[high])
+		// colors[high] = utils.Orange
+		// colors[low] = utils.Orange
+		//
+		// var msg string
+		// if low != high {
+		// 	msg = fmt.Sprintf("Mark numbers %s, %s in correct position as locked",
+		// 		utils.Colorize(fmt.Sprintf("%d", nums[high]), utils.Orange),
+		// 		utils.Colorize(fmt.Sprintf("%d", nums[low]), utils.Orange),
+		// 	)
+		// } else {
+		// 	msg = fmt.Sprintf("Mark numbers %s in correct position as locked",
+		// 		utils.Colorize(fmt.Sprintf("%d", nums[low]), utils.Orange),
+		// 	)
+		// }
+		//
+		// columnCh <- component.NewColumn(
+		// 	slices.Clone(nums),
+		// 	maps.Clone(colors),
+		// 	msg,
+		// )
 		return
 	}
 
-	pi := partition(columnCh, nums, low, high, locked)
+	pi := partition(columnCh, nums, low, high, colors)
 
-	quicksortHelper(columnCh, nums, low, pi-1, locked)
-	quicksortHelper(columnCh, nums, pi+1, high, locked)
+	quicksortHelper(columnCh, nums, low, pi-1, colors)
+	quicksortHelper(columnCh, nums, pi+1, high, colors)
 }
 
 func Quicksort(columnCh chan<- component.Column, nums []int) {
