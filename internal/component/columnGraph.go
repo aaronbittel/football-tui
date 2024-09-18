@@ -58,10 +58,6 @@ func (c ColumnGraph) String() string {
 		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
 	}
 
-	//HACK: Remove from line 30, col 30 to end of line (remove description)
-	utils.MoveCursor(30, 30)
-	fmt.Print("\033[0K")
-	fmt.Print(c.column.desc)
 	return b.String()
 }
 
@@ -109,7 +105,7 @@ func (c *ColumnGraph) Update(column Column) {
 		utils.MoveCursorLeft()
 		fmt.Print(newNums[i])
 
-		// Move cursor to first column part
+		// Move cursor to first column segment
 		utils.MoveCursor(c.row+height-2, c.col+i*(c.colParams.spaces+1))
 		fmt.Print(newC[i])
 		for range newNums[i] {
@@ -117,11 +113,12 @@ func (c *ColumnGraph) Update(column Column) {
 			utils.MoveCursorUp()
 		}
 		fmt.Print(utils.Reset)
-		// for i := range height {
-		// 	utils.MoveCursor(c.row+i, c.col)
-		// 	fmt.Print("X")
-		// }
-		// fmt.Print("X")
+
+		//HACK: Remove from line 30, col 30 to end of line (remove description)
+		//TODO: Make text center beneath graph, remove fixed numbers
+		utils.ClearLine(30, 30)
+		utils.MoveCursor(30, 30)
+		fmt.Print(column.desc)
 
 	}
 	c.column = column
@@ -146,6 +143,10 @@ func (c *ColumnGraph) At(row, col int) *ColumnGraph {
 	return c
 }
 
+func (c ColumnGraph) Nums() []int {
+	return c.column.nums
+}
+
 type Column struct {
 	nums   []int
 	colors map[int]string
@@ -163,6 +164,6 @@ func NewColumn(nums []int, colors map[int]string, desc string) Column {
 	}
 }
 
-func (c ColumnGraph) Nums() []int {
-	return c.column.nums
+func (c Column) Desc() string {
+	return c.desc
 }
