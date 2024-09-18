@@ -37,6 +37,20 @@ func ClearScreen() {
 	fmt.Print("\033[2J")
 }
 
+func ClearLine(pos ...int) {
+	switch len(pos) {
+	case 1:
+		MoveCursor(pos[0], 1)
+		fmt.Print("\033[0K")
+	case 2:
+
+		MoveCursor(pos[0], pos[1])
+		fmt.Print("\033[0K")
+	default:
+		fmt.Print("\033[0K")
+	}
+}
+
 func MoveCursor(row, col int) {
 	fmt.Printf("\033[%d;%dH", row, col)
 }
@@ -55,12 +69,14 @@ func RestoreCursorPos() {
 
 func Debug(v ...any) {
 	SaveCursorPos()
-	MoveCursor(40, 1)
+	ClearLine(47, 1)
+
 	out := ""
 	for _, val := range v {
 		out += fmt.Sprintf("%v ", val)
 	}
 	fmt.Print(out)
+
 	RestoreCursorPos()
 }
 
