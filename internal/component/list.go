@@ -117,3 +117,7 @@ func (l *List) Select(i int) *List {
 	l.Selected = i
 	return l
 }
+
+func (l List) SelectedValue() string {
+	return l.items[l.Selected]
+}

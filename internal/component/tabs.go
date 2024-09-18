@@ -7,11 +7,6 @@ import (
 	"unicode/utf8"
 )
 
-const (
-	lightgray = "\033[38;5;240m"
-	white     = "\033[37m"
-)
-
 type Tabs struct {
 	headers  []string
 	Selected int
@@ -28,7 +23,7 @@ func NewTabs(headers ...string) *Tabs {
 func (t Tabs) String() string {
 	b := new(strings.Builder)
 
-	b.WriteString(lightgray)
+	b.WriteString(utils.Lightgray)
 	b.WriteString(utils.SquareTopLeft)
 	for i, h := range t.headers {
 		b.WriteString(repeat(utils.HorizontalLine, utf8.RuneCountInString(h)+2))
@@ -44,7 +39,7 @@ func (t Tabs) String() string {
 			b.WriteString(utils.Reset)
 		}
 		b.WriteString(fmt.Sprintf(" %s %s", h, utils.Reset))
-		b.WriteString(lightgray)
+		b.WriteString(utils.Lightgray)
 		b.WriteString(utils.VerticalLine)
 	}
 	b.WriteString("\n")
@@ -73,7 +68,7 @@ func (t *Tabs) Select(i int) *Tabs {
 func (t *Tabs) Next() {
 
 	t.moveToStartofWord()
-	fmt.Print(fmt.Sprintf("%s%s%s", lightgray, t.headers[t.Selected], utils.Reset))
+	fmt.Print(fmt.Sprintf("%s%s%s", utils.Lightgray, t.headers[t.Selected], utils.Reset))
 
 	t.Selected++
 	if t.Selected >= len(t.headers) {
