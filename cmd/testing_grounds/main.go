@@ -2,19 +2,19 @@ package main
 
 import (
 	"time"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 
 	"golang.org/x/term"
 )
 
 func main() {
 	time.Sleep(time.Second)
-	fd, oldState, err := utils.Start()
+	fd, oldState, err := term_utils.Start()
 	if err != nil {
 		panic(err)
 	}
 	defer term.Restore(fd, oldState)
-	defer utils.TearDown()
+	defer term_utils.TearDown()
 
 	fixingRaceCondition()
 }

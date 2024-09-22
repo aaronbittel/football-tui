@@ -3,9 +3,8 @@ package main
 import (
 	"slices"
 	"time"
-	"tui/internal/algorithms"
 	"tui/internal/component"
-	"tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 )
 
 func fixingRaceCondition() {
@@ -17,7 +16,7 @@ func fixingRaceCondition() {
 	time.Sleep(time.Second)
 	component.Print(columnGraph)
 
-	go algorithms.Bubblesort(columnCh, slices.Clone(nums))
+	go component.Bubblesort(columnCh, slices.Clone(nums))
 
 	func() {
 		doneCh := make(chan struct{})

@@ -13,10 +13,12 @@ import (
 	"unicode/utf8"
 
 	"tui/internal/component"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 
 	"golang.org/x/term"
 )
+
+var debug = term_utils.GetDebugFunc()
 
 type Match struct {
 	Date      time.Time
@@ -41,12 +43,12 @@ func (m Match) String() string {
 }
 
 func main() {
-	fd, oldState, err := utils.Start()
+	fd, oldState, err := term_utils.Start()
 	if err != nil {
 		log.Fatal("error initalizing terminal")
 	}
 	defer term.Restore(fd, oldState)
-	defer utils.TearDown()
+	defer term_utils.TearDown()
 
 	matchday := 1
 	matches := LoadFromCSV("bundesliga", 2023, matchday)
@@ -56,7 +58,7 @@ func main() {
 		WithTitle(fmt.Sprintf("Matchday %d", matchday)).
 		WithRoundedCorners().
 		WithPadding(1, 5).
-		WithColoredBorder(utils.Blue).
+		WithColoredBorder(term_utils.Blue).
 		At(10, 10)
 
 	controlBox := component.NewBox(
@@ -82,7 +84,7 @@ func main() {
 		}
 
 		switch b {
-		case 'q', utils.CtrlC:
+		case 'q', term_utils.CtrlC:
 			running = false
 		case 'n':
 			if curMatchday+1 > 34 {
@@ -91,7 +93,7 @@ func main() {
 			curMatchday++
 			matches := LoadFromCSV("bundesliga", 2023, curMatchday)
 			matchBox.Update(fmt.Sprintf("Matchday %d", curMatchday), createMatchdayStrings(matches)...)
-			utils.Debug(curMatchday)
+			debug(curMatchday)
 		case 'p':
 			if curMatchday-1 < 0 {
 				break
@@ -99,7 +101,7 @@ func main() {
 			curMatchday--
 			matches := LoadFromCSV("bundesliga", 2023, curMatchday)
 			matchBox.Update(fmt.Sprintf("Matchday %d", curMatchday), createMatchdayStrings(matches)...)
-			utils.Debug(curMatchday)
+			debug(curMatchday)
 		}
 	}
 }

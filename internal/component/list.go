@@ -3,13 +3,8 @@ package component
 import (
 	"fmt"
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
-)
-
-const (
-	bgRed        = "\033[48;2;255;95;95m"
-	bgRedFgWhite = "\033[38;2;255;255;255;48;2;255;95;95m"
 )
 
 type List struct {
@@ -42,14 +37,14 @@ func (l *List) String() string {
 
 	for i, item := range l.items {
 		if i == l.Selected {
-			b.WriteString(bgRedFgWhite)
+			b.WriteString(term_utils.BgRedFgWhite)
 		}
 		b.WriteString(strings.Repeat(" ", l.padding.left))
 		b.WriteString(item)
 		b.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
 		b.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
-			b.WriteString(utils.Reset)
+			b.WriteString(term_utils.Reset)
 		}
 		b.WriteString("\n")
 	}
@@ -83,10 +78,10 @@ func (l *List) Next() {
 }
 
 func (l List) removeHighlight() {
-	utils.MoveCursor(l.row+l.Selected, l.col)
+	term_utils.MoveCursor(l.row+l.Selected, l.col)
 	fmt.Print(strings.Repeat(" ", l.maxLen+l.padding.right+l.padding.left))
 
-	utils.MoveCursor(l.row+l.Selected, l.col)
+	term_utils.MoveCursor(l.row+l.Selected, l.col)
 	item := l.items[l.Selected]
 	fmt.Print(strings.Repeat(" ", l.padding.left))
 	fmt.Print(item)
@@ -95,14 +90,14 @@ func (l List) removeHighlight() {
 }
 
 func (l List) addHighlight() {
-	utils.MoveCursor(l.row+l.Selected, l.col)
+	term_utils.MoveCursor(l.row+l.Selected, l.col)
 	item := l.items[l.Selected]
-	fmt.Print(bgRedFgWhite)
+	fmt.Print(term_utils.BgRedFgWhite)
 	fmt.Print(strings.Repeat(" ", l.padding.left))
 	fmt.Print(item)
 	fmt.Print(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
 	fmt.Print(strings.Repeat(" ", l.padding.right))
-	fmt.Print(utils.Reset)
+	fmt.Print(term_utils.Reset)
 }
 
 func (l *List) Prev() {

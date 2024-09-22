@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -25,36 +25,36 @@ func NewTabs(headers ...string) *Tabs {
 func (t Tabs) String() string {
 	b := new(strings.Builder)
 
-	b.WriteString(utils.Lightgray)
-	b.WriteString(utils.SquareTopLeft)
+	b.WriteString(term_utils.Lightgray)
+	b.WriteString(term_utils.SquareTopLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(utils.SquareDownHorizontal)
+			b.WriteString(term_utils.SquareDownHorizontal)
 		}
 	}
-	b.WriteString(utils.SquareTopRight + "\n")
+	b.WriteString(term_utils.SquareTopRight + "\n")
 
-	b.WriteString(utils.VerticalLine)
+	b.WriteString(term_utils.VerticalLine)
 	for i, h := range t.headers {
 		if t.Selected == i {
-			b.WriteString(utils.Reset)
+			b.WriteString(term_utils.Reset)
 		}
-		b.WriteString(fmt.Sprintf(" %s %s", h, utils.Reset))
-		b.WriteString(utils.Lightgray)
-		b.WriteString(utils.VerticalLine)
+		b.WriteString(fmt.Sprintf(" %s %s", h, term_utils.Reset))
+		b.WriteString(term_utils.Lightgray)
+		b.WriteString(term_utils.VerticalLine)
 	}
 	b.WriteString("\n")
 
-	b.WriteString(utils.SquareBottomLeft)
+	b.WriteString(term_utils.SquareBottomLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(utils.SquareUpHorizontal)
+			b.WriteString(term_utils.SquareUpHorizontal)
 		}
 	}
-	b.WriteString(utils.SquareBottomRight)
-	b.WriteString(utils.Reset)
+	b.WriteString(term_utils.SquareBottomRight)
+	b.WriteString(term_utils.Reset)
 
 	return b.String()
 }
@@ -70,7 +70,7 @@ func (t *Tabs) Select(i int) *Tabs {
 func (t *Tabs) Next() {
 
 	t.moveToStartofWord()
-	fmt.Print(fmt.Sprintf("%s%s%s", utils.Lightgray, t.headers[t.Selected], utils.Reset))
+	fmt.Print(fmt.Sprintf("%s%s%s", term_utils.Lightgray, t.headers[t.Selected], term_utils.Reset))
 
 	t.Selected++
 	if t.Selected >= len(t.headers) {
@@ -78,7 +78,7 @@ func (t *Tabs) Next() {
 	}
 
 	t.moveToStartofWord()
-	fmt.Print(fmt.Sprintf("%s%s", utils.Reset, t.headers[t.Selected]))
+	fmt.Print(fmt.Sprintf("%s%s", term_utils.Reset, t.headers[t.Selected]))
 
 }
 
@@ -88,7 +88,7 @@ func (t Tabs) moveToStartofWord() {
 		col += StringLen(t.headers[i]) + 3
 	}
 
-	utils.MoveCursor(t.row+1, col)
+	term_utils.MoveCursor(t.row+1, col)
 }
 
 func (b *Tabs) Lines() []string {

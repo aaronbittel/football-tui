@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"regexp"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -46,7 +46,7 @@ func Mask(m Masker) (height, width int) {
 func Print(s Printer) {
 	row, col := s.Pos()
 	for i, s := range s.Lines() {
-		utils.MoveCursor(row+i, col)
+		term_utils.MoveCursor(row+i, col)
 		fmt.Print(s)
 	}
 }

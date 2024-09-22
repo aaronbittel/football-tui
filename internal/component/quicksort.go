@@ -1,15 +1,14 @@
-package algorithms
+package component
 
 import (
 	"fmt"
 	"maps"
 	"slices"
-	component "tui/internal/component"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 )
 
 func partition(
-	columnCh chan<- component.ColumnGraphData,
+	columnCh chan<- ColumnGraphData,
 	nums []int,
 	low, high int,
 	colors map[int]string,
@@ -22,39 +21,39 @@ func partition(
 			continue
 		}
 
-		if colors[i] == utils.Orange {
+		if colors[i] == term_utils.Orange {
 			continue
 		}
-		colors[i] = utils.Lightgray
+		colors[i] = term_utils.Lightgray
 	}
 
-	colors[high] = utils.Green
+	colors[high] = term_utils.Green
 
 	for j := low; j < high; j++ {
-		colors[j] = utils.Blue
-		columnCh <- component.NewColumnGraphData(
+		colors[j] = term_utils.Blue
+		columnCh <- NewColumnGraphData(
 			slices.Clone(nums),
 			maps.Clone(colors),
 			fmt.Sprintf(
 				"Comparing %s to Pivot %s",
-				utils.Colorize(fmt.Sprintf("%d", nums[j]), utils.Blue),
-				utils.Colorize(fmt.Sprintf("%d", pivot), utils.Green),
+				term_utils.Colorize(fmt.Sprintf("%d", nums[j]), term_utils.Blue),
+				term_utils.Colorize(fmt.Sprintf("%d", pivot), term_utils.Green),
 			),
 		)
 		if nums[j] < pivot {
 			i++
 			delete(colors, j)
 			nums[i], nums[j] = nums[j], nums[i]
-			colors[i] = utils.Blue
-			columnCh <- component.NewColumnGraphData(
+			colors[i] = term_utils.Blue
+			columnCh <- NewColumnGraphData(
 				slices.Clone(nums),
 				maps.Clone(colors),
 				fmt.Sprintf(
 					"Swap %s and %s because %s is smaller than Pivot %s",
-					utils.Colorize(fmt.Sprintf("%d", nums[i]), utils.Blue),
-					utils.Colorize(fmt.Sprintf("%d", nums[j]), utils.White),
-					utils.Colorize(fmt.Sprintf("%d", nums[i]), utils.Blue),
-					utils.Colorize(fmt.Sprintf("%d", pivot), utils.Green),
+					term_utils.Colorize(fmt.Sprintf("%d", nums[i]), term_utils.Blue),
+					term_utils.Colorize(fmt.Sprintf("%d", nums[j]), term_utils.White),
+					term_utils.Colorize(fmt.Sprintf("%d", nums[i]), term_utils.Blue),
+					term_utils.Colorize(fmt.Sprintf("%d", pivot), term_utils.Green),
 				),
 			)
 			delete(colors, i)
@@ -64,18 +63,18 @@ func partition(
 
 	delete(colors, high)
 	nums[i+1], nums[high] = nums[high], nums[i+1]
-	colors[i+1] = utils.Green
-	columnCh <- component.NewColumnGraphData(
+	colors[i+1] = term_utils.Green
+	columnCh <- NewColumnGraphData(
 		slices.Clone(nums),
 		maps.Clone(colors),
-		fmt.Sprintf("Swap Pivot %s to correct position", utils.Colorize(
+		fmt.Sprintf("Swap Pivot %s to correct position", term_utils.Colorize(
 			fmt.Sprintf("%d", nums[i+1]),
-			utils.Green,
+			term_utils.Green,
 		)),
 	)
 
 	for k, v := range colors {
-		if v != utils.Orange {
+		if v != term_utils.Orange {
 			delete(colors, k)
 		}
 	}
@@ -84,7 +83,7 @@ func partition(
 }
 
 func quicksortHelper(
-	columnCh chan<- component.ColumnGraphData,
+	columnCh chan<- ColumnGraphData,
 	nums []int,
 	low, high int,
 	colors map[int]string,
@@ -92,19 +91,19 @@ func quicksortHelper(
 	if low >= high {
 		//FIX: Implement Correct highlighting of Locked values
 
-		// utils.Debug("lowIdx", low, "highIdx", high, "lowVal", nums[low], "highVal", nums[high])
-		// colors[high] = utils.Orange
-		// colors[low] = utils.Orange
+		// term_utils.Debug("lowIdx", low, "highIdx", high, "lowVal", nums[low], "highVal", nums[high])
+		// colors[high] = term_utils.Orange
+		// colors[low] = term_utils.Orange
 		//
 		// var msg string
 		// if low != high {
 		// 	msg = fmt.Sprintf("Mark numbers %s, %s in correct position as locked",
-		// 		utils.Colorize(fmt.Sprintf("%d", nums[high]), utils.Orange),
-		// 		utils.Colorize(fmt.Sprintf("%d", nums[low]), utils.Orange),
+		// 		term_utils.Colorize(fmt.Sprintf("%d", nums[high]), term_utils.Orange),
+		// 		term_utils.Colorize(fmt.Sprintf("%d", nums[low]), term_utils.Orange),
 		// 	)
 		// } else {
 		// 	msg = fmt.Sprintf("Mark numbers %s in correct position as locked",
-		// 		utils.Colorize(fmt.Sprintf("%d", nums[low]), utils.Orange),
+		// 		term_utils.Colorize(fmt.Sprintf("%d", nums[low]), term_utils.Orange),
 		// 	)
 		// }
 		//
@@ -122,7 +121,7 @@ func quicksortHelper(
 	quicksortHelper(columnCh, nums, pi+1, high, colors)
 }
 
-func Quicksort(columnCh chan<- component.ColumnGraphData, nums []int) {
+func Quicksort(columnCh chan<- ColumnGraphData, nums []int) {
 	defer close(columnCh)
 	quicksortHelper(columnCh, nums, 0, len(nums)-1, map[int]string{})
 }

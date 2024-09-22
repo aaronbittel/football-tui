@@ -2,7 +2,7 @@ package component
 
 import (
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 )
 
 var cursors = []string{"┿", "▰"}
@@ -34,7 +34,7 @@ func (s Slider) String() string {
 			if i == s.pos {
 				b.WriteString(s.cursor + "\n")
 			} else {
-				b.WriteString(utils.VerticalLine + "\n")
+				b.WriteString(term_utils.VerticalLine + "\n")
 			}
 		}
 		b.WriteString("▀\n")
@@ -42,9 +42,9 @@ func (s Slider) String() string {
 		b.WriteString("┠")
 		for i := range s.length {
 			if i == s.pos {
-				b.WriteString(utils.FullBlock)
+				b.WriteString(term_utils.FullBlock)
 			} else {
-				b.WriteString(utils.HorizontalLine)
+				b.WriteString(term_utils.HorizontalLine)
 			}
 		}
 		b.WriteString("┨")

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 	"time"
-	algo "tui/internal/algorithms"
 	"tui/internal/component"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 )
+
+var debug = term_utils.GetDebugFunc()
 
 func Hello() {
 	fmt.Println("Hello")
@@ -39,22 +40,22 @@ func TiminingVisualization() {
 		}
 
 		switch b {
-		case 'q', utils.CtrlC:
+		case 'q', term_utils.CtrlC:
 			running = false
-		case utils.Enter:
-			utils.Debug(fmt.Sprintf("%s task is running", "Bubblesort"))
-			go algo.Bubblesort(columnCh, nums)
+		case term_utils.Enter:
+			debug(fmt.Sprintf("%s task is running", "Bubblesort"))
+			go component.Bubblesort(columnCh, nums)
 			go HandleAlgo(controlCh, columnGraph, columnCh)
 		// case 'x':
 		// 	task = stopTask(controlCh, task)
-		case utils.Space:
+		case term_utils.Space:
 			if algoRunning {
 				controlCh <- "PAUSED"
-				utils.Debug(fmt.Sprintf("%s task is paused", "Bubblesort"))
+				debug(fmt.Sprintf("%s task is paused", "Bubblesort"))
 				algoRunning = false
 			} else {
 				controlCh <- "RUNNING"
-				utils.Debug(fmt.Sprintf("%s task is running", "Bubblesort"))
+				debug(fmt.Sprintf("%s task is running", "Bubblesort"))
 				algoRunning = true
 			}
 		case 'n':
@@ -92,7 +93,7 @@ outer:
 	for {
 		select {
 		case state = <-controlCh:
-			utils.Debug("len states", len(graphStates), "cursor", cursor)
+			debug("len states", len(graphStates), "cursor", cursor)
 			switch state {
 			case "STOP":
 				break outer
@@ -116,12 +117,12 @@ outer:
 				columnGraph.Update(graphStates[cursor])
 				time.Sleep(time.Millisecond * 5)
 			case "FASTER":
-				utils.Debug("FASTER", waitTime)
+				debug("FASTER", waitTime)
 				if waitTime-time.Millisecond*50 >= time.Millisecond*50 {
 					waitTime -= time.Millisecond * 50
 				}
 			case "SLOWER":
-				utils.Debug("SLOWER", waitTime)
+				debug("SLOWER", waitTime)
 				if waitTime+time.Millisecond*50 <= time.Millisecond*1500 {
 					waitTime += time.Millisecond * 50
 				}
@@ -143,5 +144,5 @@ outer:
 		}
 	}
 
-	utils.Debug("FINISHED")
+	debug("FINISHED")
 }

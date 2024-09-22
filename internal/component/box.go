@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -75,7 +75,7 @@ func (b *Box) Update(title string, messages ...string) {
 
 func (b *Box) String() string {
 	colorize := func(s string) string {
-		return fmt.Sprintf("%s%s%s", b.borderColor, s, utils.Reset)
+		return fmt.Sprintf("%s%s%s", b.borderColor, s, term_utils.Reset)
 	}
 
 	multiColorize := func(strs ...string) string {
@@ -84,23 +84,23 @@ func (b *Box) String() string {
 		for _, s := range strs {
 			out.WriteString(s)
 		}
-		out.WriteString(utils.Reset)
+		out.WriteString(term_utils.Reset)
 		return out.String()
 	}
 
 	var out strings.Builder
 	var (
-		topLeft     = utils.SquareTopLeft
-		topRight    = utils.SquareTopRight
-		bottomLeft  = utils.SquareBottomLeft
-		bottomRight = utils.SquareBottomRight
+		topLeft     = term_utils.SquareTopLeft
+		topRight    = term_utils.SquareTopRight
+		bottomLeft  = term_utils.SquareBottomLeft
+		bottomRight = term_utils.SquareBottomRight
 	)
 
 	if b.roundedCornors {
-		topLeft = utils.RoundedTopLeft
-		topRight = utils.RoundedTopRight
-		bottomLeft = utils.RoundedBottomLeft
-		bottomRight = utils.RoundedBottomRight
+		topLeft = term_utils.RoundedTopLeft
+		topRight = term_utils.RoundedTopRight
+		bottomLeft = term_utils.RoundedBottomLeft
+		bottomRight = term_utils.RoundedBottomRight
 	}
 
 	maxLength := MaxLength(b.messages)
@@ -112,9 +112,9 @@ func (b *Box) String() string {
 	out.WriteString(
 		multiColorize(
 			topLeft,
-			strings.Repeat(utils.HorizontalLine, spaceTitle),
+			strings.Repeat(term_utils.HorizontalLine, spaceTitle),
 			b.title,
-			strings.Repeat(utils.HorizontalLine, totalLength-titleLen-spaceTitle),
+			strings.Repeat(term_utils.HorizontalLine, totalLength-titleLen-spaceTitle),
 			topRight+"\n",
 		),
 	)
@@ -122,16 +122,16 @@ func (b *Box) String() string {
 	for range b.padding.top {
 		out.WriteString(
 			multiColorize(
-				utils.VerticalLine,
+				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
-				utils.VerticalLine+"\n",
+				term_utils.VerticalLine+"\n",
 			),
 		)
 	}
 
 	for _, message := range b.messages {
 		mLen := StringLen(message)
-		out.WriteString(colorize(utils.VerticalLine))
+		out.WriteString(colorize(term_utils.VerticalLine))
 		out.WriteString(strings.Repeat(" ", b.padding.left))
 		if !b.centeredText {
 			rightSpace := maxLength - mLen
@@ -144,15 +144,15 @@ func (b *Box) String() string {
 			out.WriteString(strings.Repeat(" ", leftSpaceLen))
 		}
 		out.WriteString(strings.Repeat(" ", b.padding.right))
-		out.WriteString(colorize(utils.VerticalLine + "\n"))
+		out.WriteString(colorize(term_utils.VerticalLine + "\n"))
 	}
 
 	for range b.padding.bottom {
 		out.WriteString(
 			multiColorize(
-				utils.VerticalLine,
+				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
-				utils.VerticalLine+"\n",
+				term_utils.VerticalLine+"\n",
 			),
 		)
 	}
@@ -160,7 +160,7 @@ func (b *Box) String() string {
 	out.WriteString(
 		multiColorize(
 			bottomLeft,
-			strings.Repeat(utils.HorizontalLine, maxLength+b.padding.left+b.padding.right),
+			strings.Repeat(term_utils.HorizontalLine, maxLength+b.padding.left+b.padding.right),
 			bottomRight,
 		),
 	)
@@ -236,7 +236,7 @@ func Clear(c Clearer) {
 	height, width := Mask(c)
 	row, col := c.Pos()
 	for i := range height {
-		utils.MoveCursor(row+i, col)
+		term_utils.MoveCursor(row+i, col)
 		fmt.Print(strings.Repeat(" ", width))
 	}
 }

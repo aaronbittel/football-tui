@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 )
 
 type ColumnGraph struct {
@@ -14,11 +14,6 @@ type ColumnGraph struct {
 
 	columnGraphData ColumnGraphData
 	colParams       columnParams
-}
-
-type columnParams struct {
-	maxVal int
-	spaces int
 }
 
 func NewColumnGraph(nums []int) *ColumnGraph {
@@ -44,9 +39,9 @@ func (c *ColumnGraph) String() string {
 		for i, n := range c.columnGraphData.nums {
 			if n >= row {
 				if color, found := c.columnGraphData.colors[i]; found {
-					char = fmt.Sprint(color, utils.FullBlock, utils.Reset)
+					char = fmt.Sprint(color, term_utils.FullBlock, term_utils.Reset)
 				} else {
-					char = utils.FullBlock
+					char = term_utils.FullBlock
 				}
 			} else {
 				char = " "
@@ -87,30 +82,30 @@ func (c *ColumnGraph) Update(newColData ColumnGraphData) {
 		//TODO: Only replace the minimum number of characters
 
 		// -1 because the number underneath the columns counts into the height
-		utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*(c.colParams.spaces+1))
+		term_utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*(c.colParams.spaces+1))
 		for range oldNums[i] {
 			fmt.Print(" ")
-			utils.MoveCursorDown()
+			term_utils.MoveCursorDown()
 		}
 		fmt.Print("  ")
 
-		utils.MoveCursorLeft()
-		utils.MoveCursorLeft()
+		term_utils.MoveCursorLeft()
+		term_utils.MoveCursorLeft()
 		fmt.Print(newNums[i])
 
 		// Move cursor to first column segment
-		utils.MoveCursor(c.row+height-2, c.col+i*(c.colParams.spaces+1))
+		term_utils.MoveCursor(c.row+height-2, c.col+i*(c.colParams.spaces+1))
 		fmt.Print(newC[i])
 		for range newNums[i] {
-			fmt.Print(utils.FullBlock)
-			utils.MoveCursorUp()
+			fmt.Print(term_utils.FullBlock)
+			term_utils.MoveCursorUp()
 		}
-		fmt.Print(utils.Reset)
+		fmt.Print(term_utils.Reset)
 
 		//HACK: Remove from line 30, col 30 to end of line (remove description)
 		//TODO: Make text center beneath graph, remove fixed numbers
-		utils.ClearLine(30, 30)
-		utils.MoveCursor(30, 30)
+		term_utils.ClearLine(30, 30)
+		term_utils.MoveCursor(30, 30)
 		fmt.Print(newColData.desc)
 
 	}

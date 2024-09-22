@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"strings"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
@@ -134,7 +134,7 @@ func (t Table) createRow(idx int) string {
 			item   = t.rows[idx][i]
 			length = utf8.RuneCountInString(item)
 		)
-		b.WriteString(utils.VerticalLine)
+		b.WriteString(term_utils.VerticalLine)
 		b.WriteString(strings.Repeat(" ", t.padding))
 		if t.headers[i].centered {
 			b.WriteString(centerText(item, l))
@@ -145,22 +145,22 @@ func (t Table) createRow(idx int) string {
 		b.WriteString(strings.Repeat(" ", t.padding))
 	}
 
-	b.WriteString(utils.VerticalLine)
+	b.WriteString(term_utils.VerticalLine)
 
 	return b.String() + "\n"
 }
 
 func (t Table) createSeperator() string {
 	b := new(strings.Builder)
-	b.WriteString(utils.SquareRightVertial)
+	b.WriteString(term_utils.SquareRightVertial)
 
 	for i, l := range t.minLengths {
-		b.WriteString(strings.Repeat(utils.HorizontalLine, l+2*t.padding))
+		b.WriteString(strings.Repeat(term_utils.HorizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(utils.SquareCross)
+			b.WriteString(term_utils.SquareCross)
 			continue
 		}
-		b.WriteString(utils.SquareLeftVertial)
+		b.WriteString(term_utils.SquareLeftVertial)
 	}
 
 	return b.String() + "\n"
@@ -170,20 +170,20 @@ func (t Table) createBottomLine() string {
 	b := new(strings.Builder)
 
 	var (
-		bottomLeft  = utils.SquareBottomLeft
-		bottomRight = utils.SquareBottomRight
+		bottomLeft  = term_utils.SquareBottomLeft
+		bottomRight = term_utils.SquareBottomRight
 	)
 
 	if t.roundedCorners {
-		bottomLeft = utils.RoundedBottomLeft
-		bottomRight = utils.RoundedBottomRight
+		bottomLeft = term_utils.RoundedBottomLeft
+		bottomRight = term_utils.RoundedBottomRight
 	}
 
 	b.WriteString(bottomLeft)
 	for i, l := range t.minLengths {
-		b.WriteString(strings.Repeat(utils.HorizontalLine, l+2*t.padding))
+		b.WriteString(strings.Repeat(term_utils.HorizontalLine, l+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(utils.SquareUpHorizontal)
+			b.WriteString(term_utils.SquareUpHorizontal)
 			continue
 		}
 		b.WriteString(bottomRight)
@@ -196,13 +196,13 @@ func (t Table) createHeading() string {
 	b := new(strings.Builder)
 
 	for i, h := range t.headers {
-		b.WriteString(utils.VerticalLine)
+		b.WriteString(term_utils.VerticalLine)
 		b.WriteString(strings.Repeat(" ", t.padding))
 		b.WriteString(h.text)
 		b.WriteString(strings.Repeat(" ", t.minLengths[i]-utf8.RuneCountInString(h.text)))
 		b.WriteString(strings.Repeat(" ", t.padding))
 		if i == len(t.headers)-1 {
-			b.WriteString(utils.VerticalLine)
+			b.WriteString(term_utils.VerticalLine)
 		}
 	}
 
@@ -213,20 +213,20 @@ func (t Table) createTopLine() string {
 	b := new(strings.Builder)
 
 	var (
-		topLeft  = utils.SquareTopLeft
-		topRight = utils.SquareTopRight
+		topLeft  = term_utils.SquareTopLeft
+		topRight = term_utils.SquareTopRight
 	)
 
 	if t.roundedCorners {
-		topLeft = utils.RoundedTopLeft
-		topRight = utils.RoundedTopRight
+		topLeft = term_utils.RoundedTopLeft
+		topRight = term_utils.RoundedTopRight
 	}
 
 	b.WriteString(topLeft)
 	for i := range t.headers {
-		b.WriteString(strings.Repeat(utils.HorizontalLine, t.minLengths[i]+2*t.padding))
+		b.WriteString(strings.Repeat(term_utils.HorizontalLine, t.minLengths[i]+2*t.padding))
 		if i != len(t.headers)-1 {
-			b.WriteString(utils.SquareDownHorizontal)
+			b.WriteString(term_utils.SquareDownHorizontal)
 			continue
 		}
 		b.WriteString(topRight)
