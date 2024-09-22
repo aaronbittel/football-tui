@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	term_utils "tui/internal/term-utils"
@@ -13,23 +14,49 @@ func Selectionsort(columnCh chan<- ColumnGraphData, nums []int) {
 
 	for i := 0; i < len(nums); i++ {
 		minVal := nums[i]
-		minIndex := i
+		minIdx := i
 		for j := 1 + i; j < len(nums); j++ {
-			colors[minIndex] = term_utils.Green
+			colors[minIdx] = term_utils.Green
 			colors[j] = term_utils.Blue
-			columnCh <- NewColumnGraphData(slices.Clone(nums), maps.Clone(colors), "")
+			columnCh <- NewColumnGraphData(
+				slices.Clone(nums),
+				maps.Clone(colors),
+				fmt.Sprintf("Comparing current min value %s to %s",
+					term_utils.Colorize(minVal, term_utils.Green),
+					term_utils.Colorize(nums[j], term_utils.Blue)))
 			if nums[j] < minVal {
-				delete(colors, minIndex)
+				oldMinVal := minVal
+				oldMinIdx := minIdx
+				colors[oldMinIdx] = term_utils.Blue
 				minVal = nums[j]
-				minIndex = j
-				colors[minIndex] = term_utils.Green
+				minIdx = j
+				colors[minIdx] = term_utils.Green
+				columnCh <- NewColumnGraphData(
+					slices.Clone(nums),
+					maps.Clone(colors),
+					fmt.Sprintf("New min value is %s, because %s < %s",
+						term_utils.Colorize(minVal, term_utils.Green),
+						term_utils.Colorize(minVal, term_utils.Green),
+						term_utils.Colorize(oldMinVal, term_utils.Blue)))
+				delete(colors, oldMinIdx)
+				delete(colors, minIdx)
 			}
 			delete(colors, j)
-			delete(colors, minIndex)
+			delete(colors, minIdx)
 		}
-		nums[i], nums[minIndex] = nums[minIndex], nums[i]
+		nums[i], nums[minIdx] = nums[minIdx], nums[i]
 		colors[i] = term_utils.Orange
+
+		columnCh <- NewColumnGraphData(
+			slices.Clone(nums),
+			maps.Clone(colors),
+			fmt.Sprintf(
+				"%s is now locked",
+				term_utils.Colorize(nums[i], term_utils.Orange)))
 	}
 
-	columnCh <- NewColumnGraphData(slices.Clone(nums), maps.Clone(colors), "")
+	columnCh <- NewColumnGraphData(
+		slices.Clone(nums),
+		maps.Clone(colors),
+		"Selection sort completed")
 }
