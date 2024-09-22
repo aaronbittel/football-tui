@@ -16,3 +16,6 @@
 - [ ] Option to go back and forth steps
 - [ ] Option to sort ascending or descending
 - [ ] Option between column or array display
+- [ ] How to handle holding down a key? "e.g. space"
+
+- [ ] Idle state for different categories of algorithms
