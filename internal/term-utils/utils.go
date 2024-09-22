@@ -2,10 +2,13 @@ package term_utils
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"syscall"
 
 	"golang.org/x/term"
 )
+
+var debugFunc = Debug()
 
 func MoveCursorDown() {
 	MoveCursorLeft()
@@ -67,17 +70,33 @@ func RestoreCursorPos() {
 	fmt.Print("\033[u")
 }
 
-func Debug(v ...any) {
-	SaveCursorPos()
-	ClearLine(47, 1)
+func Debug() func(v ...any) {
+	counter := 0
+	times := 0
+	debugRow := 40
+	return func(v ...any) {
+		SaveCursorPos()
 
-	out := ""
-	for _, val := range v {
-		out += fmt.Sprintf("%v ", val)
+		times = counter % 5
+
+		if counter >= 5 {
+			ClearLine(debugRow+times, 1)
+		}
+
+		out := ""
+		for _, val := range v {
+			out += fmt.Sprintf("%v ", val)
+		}
+
+		MoveCursor(debugRow+times, 1)
+		fmt.Print(out)
+		counter++
+		RestoreCursorPos()
 	}
-	fmt.Print(out)
+}
 
-	RestoreCursorPos()
+func GetDebugFunc() func(v ...any) {
+	return debugFunc
 }
 
 func TearDown() {
@@ -96,4 +115,10 @@ func Start() (fd int, oldState *term.State, err error) {
 	oldState, err = term.MakeRaw(fd)
 
 	return fd, oldState, err
+}
+
+func getRandomColor() string {
+	const colorCode = "\033[%dm"
+	r := rand.IntN(8) + 30
+	return fmt.Sprintf(colorCode, r)
 }
