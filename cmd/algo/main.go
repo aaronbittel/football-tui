@@ -3,45 +3,73 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"math/rand/v2"
+	"log/slog"
 	"os"
-	"slices"
 	"time"
-	algo "tui/internal/algorithms"
 	"tui/internal/component"
-	utils "tui/internal/term-utils"
+	term_utils "tui/internal/term-utils"
 
 	"golang.org/x/term"
 )
 
+type State int
+
+const (
+	running State = iota
+	paused
+	next
+	stop
+	prev
+	not_started
+	slower
+	faster
+	reset
+)
+
+var (
+	debug  = term_utils.GetDebugFunc()
+	logger *slog.Logger
+)
+
 func main() {
-	fd, oldState, err := utils.Start()
+	f, err := os.Create("logging.txt")
+	if err != nil {
+		fmt.Println("error creating logging file")
+		os.Exit(1)
+	}
+	logger = slog.New(slog.NewTextHandler(f, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	fd, oldState, err := term_utils.Start()
 	if err != nil {
 		fmt.Println("error initializing raw terminal", err)
 		os.Exit(1)
 	}
 	defer term.Restore(fd, oldState)
-	defer utils.TearDown()
+	defer term_utils.TearDown()
 
-	// nums := []int{14, 4, 12, 1, 16, 6, 13, 8, 11, 17, 7, 15, 2, 9, 18, 3, 5, 10}
-	nums := []int{14, 12, 1, 8, 11, 15, 2, 3, 5}
+	title := component.NewBox("Terminal Algorithm Visualizer").
+		WithRoundedCorners().
+		At(3, 35)
 
-	columnGraph := component.NewColumnGraph(slices.Clone(nums)).At(10, 25)
+	algoList := component.NewList("Bubble sort", "Selection sort", "Quick sort", "Merge sort", "Heap sort").
+		At(8, 5)
 
-	component.Print(columnGraph)
-	// component.Print(title)
-	// component.Print(tabs)
-	// component.Print(list)
-	// component.Print(controlBox)
+	component.Print(title)
+	component.Print(algoList)
 
-	controlCh := make(chan string)
-	defer close(controlCh)
-	// visualizationRunning := false
+	nums := []int{14, 4, 12, 1, 16, 6, 13, 8, 11, 17, 7, 15, 2, 9, 18, 3, 5, 10}
+	// nums := []int{14, 12, 1, 8, 11, 15, 2, 3, 5}
+
+	columnGraph := component.NewColumnGraphFrames(nums).At(8, 25)
+	columnGraph.PrintIdle()
+
+	controlCh := make(chan State)
+	graphState := not_started
 
 	reader := bufio.NewReader(os.Stdin)
-	running := true
+	active := true
 
-	for running {
+	for active {
 		b, err := reader.ReadByte()
 		if err != nil {
 			fmt.Println("Error reading byte:", err)
@@ -49,60 +77,101 @@ func main() {
 		}
 
 		switch b {
-		case 'q', utils.CtrlC:
-			running = false
-		case utils.Enter:
-			legend := []string{
-				utils.Colorize(fmt.Sprintf("%s Current", utils.WhiteSquare), utils.Green),
-				utils.Colorize(fmt.Sprintf("%s Compare", utils.WhiteSquare), utils.Blue),
-				utils.Colorize(fmt.Sprintf("%s Locked", utils.WhiteSquare), utils.Orange),
+		case 'q', term_utils.CtrlC:
+			active = false
+		case 'j':
+			algoList.Next()
+		case 'x':
+			logger.Debug("pressed x")
+			controlCh <- stop
+			graphState = not_started
+			columnGraph.Clear()
+			columnGraph.PrintIdle()
+		case 'k':
+			algoList.Prev()
+		case term_utils.Enter:
+			logger.Debug("pressed enter")
+			if graphState != not_started {
+				controlCh <- stop
 			}
-			handleGraph(controlCh, columnGraph, algo.Bubblesort, time.Millisecond*100, legend)
+
+			algo := component.NewAlgorithm(
+				component.ToAlgoName(algoList.SelectedValue()),
+			)
+
+			doneCh := make(chan struct{})
+			go func() {
+				columnGraph.Init(algo)
+				doneCh <- struct{}{}
+			}()
+
+			<-doneCh
+			graphState = running
+			go handleGraph(controlCh, columnGraph, time.Millisecond*400)
+		case term_utils.Space:
+			logger.Debug("pressed space")
+			if graphState == paused {
+				graphState = running
+				controlCh <- running
+			} else {
+				graphState = paused
+				controlCh <- paused
+			}
+		case 'n':
+			logger.Debug("pressed n")
+			graphState = paused
+			controlCh <- next
+		case 'p':
+			logger.Debug("pressed p")
+			graphState = paused
+			controlCh <- prev
+		case 'f':
+			controlCh <- faster
+		case 's':
+			controlCh <- slower
 		}
 	}
 }
 
-func getRandomColor() string {
-	const colorCode = "\033[%dm"
-	r := rand.IntN(8) + 30
-	return fmt.Sprintf(colorCode, r)
-}
-
-func stopVisualization(controlCh chan<- string) {
-	controlCh <- "STOP"
-}
-
-type Algorithm func(chan<- component.ColumnGraphData, []int)
-
 func handleGraph(
-	controlCh <-chan string,
-	columnGraph *component.ColumnGraph,
-	algo Algorithm,
+	controlCh <-chan State,
+	columnGraph *component.ColumnGraphFrames,
 	waitTime time.Duration,
-	legend []string,
 ) {
-
-	columnCh := make(chan component.ColumnGraphData)
-
-	go algo(columnCh, slices.Clone(columnGraph.Nums()))
-
-	go func() {
-		for col := range columnCh {
-			columnGraph.Update(col)
+	state := running
+	for {
+		select {
+		case state = <-controlCh:
+			switch state {
+			case stop:
+				logger.Debug("got stop")
+				columnGraph.ClearDescription()
+				debug("CLEARING DESC")
+				return
+			case next:
+				logger.Debug("got next")
+				state = paused
+				columnGraph.Next()
+			case prev:
+				logger.Debug("got prev")
+				state = paused
+				columnGraph.Prev()
+			case reset:
+			case faster:
+				if waitTime-time.Millisecond*50 >= time.Millisecond*50 {
+					waitTime -= time.Millisecond * 50
+				}
+			case slower:
+				if waitTime+time.Millisecond*50 <= time.Millisecond*1500 {
+					waitTime += time.Millisecond * 50
+				}
+			}
+		default:
+			if state == paused {
+				break
+			}
+			columnGraph.Next()
 			time.Sleep(waitTime)
 		}
-	}()
-
-	_, cWidth := columnGraph.Mask()
-	cRow, cCol := columnGraph.Pos()
-	legendRow, legendCol := cRow, cCol+cWidth+20
-
-	legendBox := component.NewBox(legend...).
-		WithRoundedCorners().
-		WithTitle("Legend").
-		WithPadding(1, 2, 1, 2).
-		At(legendRow, legendCol)
-
-	component.Print(legendBox)
-
+	}
 }
