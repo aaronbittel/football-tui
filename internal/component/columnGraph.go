@@ -8,10 +8,12 @@ import (
 )
 
 type ColumnGraph struct {
-	column    Column
-	row       int
-	col       int
-	colParams columnParams
+	originalNums []int
+	row          int
+	col          int
+
+	columnGraphData ColumnGraphData
+	colParams       columnParams
 }
 
 type columnParams struct {
@@ -19,12 +21,13 @@ type columnParams struct {
 	spaces int
 }
 
-func NewColumnGraph(column Column) *ColumnGraph {
-	m := slices.Max(column.nums)
+func NewColumnGraph(nums []int) *ColumnGraph {
+	m := slices.Max(nums)
 	spaces := len(fmt.Sprint(m))
 
 	return &ColumnGraph{
-		column: column,
+		columnGraphData: NewColumnGraphData(slices.Clone(nums), nil, ""),
+		originalNums:    nums,
 		colParams: columnParams{
 			maxVal: m,
 			spaces: spaces,
@@ -32,15 +35,15 @@ func NewColumnGraph(column Column) *ColumnGraph {
 	}
 }
 
-func (c ColumnGraph) String() string {
+func (c *ColumnGraph) String() string {
 	var b strings.Builder
 
 	var char string
 
 	for row := c.colParams.maxVal; row >= 1; row-- {
-		for i, n := range c.column.nums {
+		for i, n := range c.columnGraphData.nums {
 			if n >= row {
-				if color, found := c.column.colors[i]; found {
+				if color, found := c.columnGraphData.colors[i]; found {
 					char = fmt.Sprint(color, utils.FullBlock, utils.Reset)
 				} else {
 					char = utils.FullBlock
@@ -53,7 +56,7 @@ func (c ColumnGraph) String() string {
 		b.WriteString("\n")
 	}
 
-	for _, n := range c.column.nums {
+	for _, n := range c.columnGraphData.nums {
 		s := c.colParams.spaces - len(fmt.Sprint(n)) + 1
 		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
 	}
@@ -61,37 +64,27 @@ func (c ColumnGraph) String() string {
 	return b.String()
 }
 
-func (c *ColumnGraph) Update(column Column) {
+func (c *ColumnGraph) Reset() {
+	c.columnGraphData = NewColumnGraphData(slices.Clone(c.originalNums), nil, "")
+	Print(c)
+}
+
+func (c *ColumnGraph) Update(newColData ColumnGraphData) {
 	var (
-		oldNums   = c.column.nums
-		oldC      = c.column.colors
-		newNums   = column.nums
-		newC      = column.colors
+		oldNums   = c.columnGraphData.nums
+		oldC      = c.columnGraphData.colors
+		newNums   = newColData.nums
+		newC      = newColData.colors
 		height, _ = c.Mask()
 	)
 
 	for i := 0; i < len(oldNums); i++ {
+		// Only update the columns that have changed
 		if oldNums[i] == newNums[i] && oldC[i] == newC[i] {
 			continue
 		}
 
 		//TODO: Only replace the minimum number of characters
-
-		// if oldC[i] != newC[i] {
-		// 	newColor := newC[i]
-		// 	fmt.Print(newColor)
-		// 	utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
-		// 	for range oldNums[i] {
-		// 		fmt.Print(utils.FullBlock)
-		// 		utils.MoveCursorDown()
-		// 	}
-		// 	fmt.Print(utils.Reset)
-		// }
-		//
-		// if oldNums[i] != newNums[i] {
-		// 	utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*3)
-		// 	fmt.Print("X")
-		// }
 
 		// -1 because the number underneath the columns counts into the height
 		utils.MoveCursor(c.row+(height-oldNums[i]-1), c.col+i*(c.colParams.spaces+1))
@@ -118,21 +111,21 @@ func (c *ColumnGraph) Update(column Column) {
 		//TODO: Make text center beneath graph, remove fixed numbers
 		utils.ClearLine(30, 30)
 		utils.MoveCursor(30, 30)
-		fmt.Print(column.desc)
+		fmt.Print(newColData.desc)
 
 	}
-	c.column = column
+	c.columnGraphData = newColData
 }
 
-func (c ColumnGraph) Lines() []string {
+func (c *ColumnGraph) Lines() []string {
 	return strings.Split(c.String(), "\n")
 }
 
-func (c ColumnGraph) Pos() (row, col int) {
+func (c *ColumnGraph) Pos() (row, col int) {
 	return c.row, c.col
 }
 
-func (c ColumnGraph) Mask() (height, width int) {
+func (c *ColumnGraph) Mask() (height, width int) {
 	lines := c.Lines()
 	return len(lines), StringLen(lines[0])
 }
@@ -143,27 +136,31 @@ func (c *ColumnGraph) At(row, col int) *ColumnGraph {
 	return c
 }
 
-func (c ColumnGraph) Nums() []int {
-	return c.column.nums
+func (c *ColumnGraph) Nums() []int {
+	return c.columnGraphData.nums
 }
 
-type Column struct {
+type ColumnGraphData struct {
 	nums   []int
 	colors map[int]string
 	desc   string
 }
 
-func NewColumn(nums []int, colors map[int]string, desc string) Column {
-	if colors == nil {
-		colors = make(map[int]string)
+func NewColumnGraphData(nums []int, m map[int]string, desc string) ColumnGraphData {
+	if m == nil {
+		m = make(map[int]string)
 	}
-	return Column{
+	return ColumnGraphData{
 		nums:   nums,
-		colors: colors,
+		colors: m,
 		desc:   desc,
 	}
 }
 
-func (c Column) Desc() string {
+func (c ColumnGraphData) Desc() string {
 	return c.desc
+}
+
+func (c ColumnGraphData) Nums() []int {
+	return c.nums
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func partition(
-	columnCh chan<- component.Column,
+	columnCh chan<- component.ColumnGraphData,
 	nums []int,
 	low, high int,
 	colors map[int]string,
@@ -32,7 +32,7 @@ func partition(
 
 	for j := low; j < high; j++ {
 		colors[j] = utils.Blue
-		columnCh <- component.NewColumn(
+		columnCh <- component.NewColumnGraphData(
 			slices.Clone(nums),
 			maps.Clone(colors),
 			fmt.Sprintf(
@@ -46,7 +46,7 @@ func partition(
 			delete(colors, j)
 			nums[i], nums[j] = nums[j], nums[i]
 			colors[i] = utils.Blue
-			columnCh <- component.NewColumn(
+			columnCh <- component.NewColumnGraphData(
 				slices.Clone(nums),
 				maps.Clone(colors),
 				fmt.Sprintf(
@@ -65,7 +65,7 @@ func partition(
 	delete(colors, high)
 	nums[i+1], nums[high] = nums[high], nums[i+1]
 	colors[i+1] = utils.Green
-	columnCh <- component.NewColumn(
+	columnCh <- component.NewColumnGraphData(
 		slices.Clone(nums),
 		maps.Clone(colors),
 		fmt.Sprintf("Swap Pivot %s to correct position", utils.Colorize(
@@ -84,7 +84,7 @@ func partition(
 }
 
 func quicksortHelper(
-	columnCh chan<- component.Column,
+	columnCh chan<- component.ColumnGraphData,
 	nums []int,
 	low, high int,
 	colors map[int]string,
@@ -122,7 +122,7 @@ func quicksortHelper(
 	quicksortHelper(columnCh, nums, pi+1, high, colors)
 }
 
-func Quicksort(columnCh chan<- component.Column, nums []int) {
+func Quicksort(columnCh chan<- component.ColumnGraphData, nums []int) {
 	defer close(columnCh)
 	quicksortHelper(columnCh, nums, 0, len(nums)-1, map[int]string{})
 }

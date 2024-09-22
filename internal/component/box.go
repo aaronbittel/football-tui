@@ -57,14 +57,20 @@ func NewPadding(ps ...int) Padding {
 
 func NewBox(messages ...string) *Box {
 	return &Box{
+		row:      1,
+		col:      1,
 		messages: messages,
 		padding:  NewPadding(0, 1),
 	}
 }
 
-func (b *Box) Update(messages ...string) *Box {
+func (b *Box) Update(title string, messages ...string) {
+	if title != "" {
+		b.title = " " + title + " "
+	}
 	b.messages = messages
-	return b
+	Clear(b)
+	Print(b)
 }
 
 func (b *Box) String() string {

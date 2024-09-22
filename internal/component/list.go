@@ -23,6 +23,8 @@ type List struct {
 
 func NewList(items ...string) *List {
 	return &List{
+		row:     1,
+		col:     1,
 		items:   items,
 		padding: NewPadding(0, 1),
 	}

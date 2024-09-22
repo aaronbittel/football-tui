@@ -16,6 +16,8 @@ type Tabs struct {
 
 func NewTabs(headers ...string) *Tabs {
 	return &Tabs{
+		row:     1,
+		col:     1,
 		headers: headers,
 	}
 }

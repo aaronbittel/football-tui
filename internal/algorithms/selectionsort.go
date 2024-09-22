@@ -7,7 +7,7 @@ import (
 	utils "tui/internal/term-utils"
 )
 
-func Selectionsort(columnCh chan<- component.Column, nums []int) {
+func Selectionsort(columnCh chan<- component.ColumnGraphData, nums []int) {
 	defer close(columnCh)
 
 	colors := make(map[int]string)
@@ -18,7 +18,7 @@ func Selectionsort(columnCh chan<- component.Column, nums []int) {
 		for j := 1 + i; j < len(nums); j++ {
 			colors[minIndex] = utils.Green
 			colors[j] = utils.Blue
-			columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(colors), "")
+			columnCh <- component.NewColumnGraphData(slices.Clone(nums), maps.Clone(colors), "")
 			if nums[j] < minVal {
 				delete(colors, minIndex)
 				minVal = nums[j]
@@ -32,5 +32,5 @@ func Selectionsort(columnCh chan<- component.Column, nums []int) {
 		colors[i] = utils.Orange
 	}
 
-	columnCh <- component.NewColumn(slices.Clone(nums), maps.Clone(colors), "")
+	columnCh <- component.NewColumnGraphData(slices.Clone(nums), maps.Clone(colors), "")
 }

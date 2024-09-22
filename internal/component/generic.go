@@ -10,6 +10,8 @@ type Generic struct {
 
 func NewGeneric(content string) *Generic {
 	return &Generic{
+		row:     1,
+		col:     1,
 		content: content,
 	}
 }

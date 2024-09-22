@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
@@ -23,7 +22,7 @@ type Clearer interface {
 }
 
 type Printer interface {
-	fmt.Stringer
+	Masker
 	Pos() (row, col int)
 }
 
@@ -46,7 +45,7 @@ func Mask(m Masker) (height, width int) {
 
 func Print(s Printer) {
 	row, col := s.Pos()
-	for i, s := range strings.Split(s.String(), "\n") {
+	for i, s := range s.Lines() {
 		utils.MoveCursor(row+i, col)
 		fmt.Print(s)
 	}
