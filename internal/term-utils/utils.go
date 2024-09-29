@@ -1,57 +1,81 @@
 package term_utils
 
 import (
+	"bufio"
 	"fmt"
-	"math/rand/v2"
+	"os"
+	"regexp"
 	"syscall"
+	"time"
+	"unicode/utf8"
 
 	"golang.org/x/term"
 )
 
-var debugFunc = Debug()
+const (
+	ClearLineCode        = "\033[0K"
+	ClearScreenCode      = "\033[2J"
+	HideCursorCode       = "\033[?25l"
+	ShowCursorCode       = "\033[?25h"
+	SaveCursorPosCode    = "\033[s"
+	RestoreCursorPosCode = "\033[u"
+	MoveCursorDownCode   = "\033[B"
+	MoveCursorUpCode     = "\033[A"
+	ResetCode            = "\033[m"
+)
+
+var (
+	ansiRegex = regexp.MustCompile("[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")
+
+	debugFunc = Debug()
+)
 
 func MoveCursorDown() {
 	MoveCursorLeft()
-	fmt.Print("\033[B")
+	fmt.Print(MoveCursorDownCode)
 }
 
 func MoveCursorUp() {
 	MoveCursorLeft()
-	fmt.Print("\033[A")
+	fmt.Print(MoveCursorUpCode)
 }
 
-func MoveCursorRight() {
-	fmt.Print("\033[C")
+func MoveCursorLeft(count ...int) {
+	n := 1
+	if len(count) > 0 {
+		n = count[0]
+	}
+	fmt.Printf("\033[%dD", n)
 }
 
-func MoveCursorLeft() {
-	fmt.Print("\033[D")
+func MoveCursorRight(count ...int) {
+	n := 1
+	if len(count) > 0 {
+		n = count[0]
+	}
+	fmt.Printf("\033[%dC", n)
 }
 
 func HideCursor() {
-	fmt.Print("\033[?25l")
+	fmt.Print(HideCursorCode)
 }
 
 func ShowCursor() {
-	fmt.Print("\033[?25h")
+	fmt.Print(ShowCursorCode)
 }
 
 func ClearScreen() {
-	fmt.Print("\033[2J")
+	fmt.Print(ClearScreenCode)
 }
 
 func ClearLine(pos ...int) {
 	switch len(pos) {
 	case 1:
 		MoveCursor(pos[0], 1)
-		fmt.Print("\033[0K")
 	case 2:
-
 		MoveCursor(pos[0], pos[1])
-		fmt.Print("\033[0K")
-	default:
-		fmt.Print("\033[0K")
 	}
+	fmt.Print(ClearLineCode)
 }
 
 func MoveCursor(row, col int) {
@@ -63,19 +87,31 @@ func GetSize(fd int) (rows, cols int, err error) {
 }
 
 func SaveCursorPos() {
-	fmt.Print("\033[s")
+	fmt.Print(SaveCursorPosCode)
 }
 
 func RestoreCursorPos() {
-	fmt.Print("\033[u")
+	fmt.Print(RestoreCursorPosCode)
 }
 
 func Debug() func(v ...any) {
 	counter := 0
 	times := 0
-	debugRow := 40
+	debugRow := 39
+	now := time.Now()
 	return func(v ...any) {
 		SaveCursorPos()
+		defer RestoreCursorPos()
+
+		if time.Since(now) > time.Second*3 {
+			ClearLine(debugRow, 1)
+			ClearLine(debugRow+1, 1)
+			ClearLine(debugRow+2, 1)
+			ClearLine(debugRow+3, 1)
+			ClearLine(debugRow+4, 1)
+			counter = 0
+			now = time.Now()
+		}
 
 		times = counter % 5
 
@@ -91,7 +127,6 @@ func Debug() func(v ...any) {
 		MoveCursor(debugRow+times, 1)
 		fmt.Print(out)
 		counter++
-		RestoreCursorPos()
 	}
 }
 
@@ -100,8 +135,8 @@ func GetDebugFunc() func(v ...any) {
 }
 
 func TearDown() {
-	fmt.Print(Reset)
-	MoveCursor(0, 0)
+	fmt.Print(ResetCode)
+	MoveCursor(1, 1)
 	ClearScreen()
 	ShowCursor()
 }
@@ -117,8 +152,16 @@ func Start() (fd int, oldState *term.State, err error) {
 	return fd, oldState, err
 }
 
-func getRandomColor() string {
-	const colorCode = "\033[%dm"
-	r := rand.IntN(8) + 30
-	return fmt.Sprintf(colorCode, r)
+func StringLen(str string) int {
+	return utf8.RuneCountInString(StripAnsi(str))
+}
+
+// REFERENCE: https://github.com/acarl005/stripansi/blob/master/stripansi.go
+func StripAnsi(str string) string {
+	return ansiRegex.ReplaceAllString(str, "")
+}
+
+func WaitForEnter() {
+	r := bufio.NewReader(os.Stdin)
+	r.ReadByte()
 }

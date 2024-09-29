@@ -10,17 +10,25 @@ const (
 	Green     = "\033[38;5;10m"
 	Lightgray = "\033[38;5;240m"
 	White     = "\033[37m"
+	Red       = "\033[38;2;255;95;95m"
+	Cyan      = "\033[38;2;0;255;255m"
 
 	BgRed        = "\033[48;2;255;95;95m"
 	BgRedFgWhite = "\033[38;2;255;255;255;48;2;255;95;95m"
+	BoldRed      = "\033[1;38;2;255;95;95m"
+	BoldCyan     = "\033[1;38;2;0;255;255m"
+	BoldBlue     = "\033[1;38;2;184;200;255m"
+	BoldGreen    = "\033[1;38;2;170;196;117m"
 
 	CtrlC = '\x03'
 	Enter = 13
 	Space = 32
 	Tab   = 9
 
-	FullBlock            = "█"
-	WhiteSquare          = "▣"
+	FullBlock   = "█"
+	WhiteSquare = "▣"
+	Underscore  = "_"
+
 	SquareDownHorizontal = "┬"
 	SquareRightVertial   = "├"
 	SquareLeftVertial    = "┤"
