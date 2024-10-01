@@ -8,8 +8,7 @@ import (
 )
 
 type Box struct {
-	width          int
-	height         int
+	builder        strings.Builder
 	row            int
 	col            int
 	messages       []string
@@ -57,6 +56,7 @@ func NewPadding(ps ...int) Padding {
 
 func NewBox(messages ...string) *Box {
 	return &Box{
+		builder:  strings.Builder{},
 		row:      1,
 		col:      1,
 		messages: messages,
@@ -74,8 +74,10 @@ func (b *Box) Update(title string, messages ...string) {
 }
 
 func (b *Box) String() string {
+	defer b.builder.Reset()
+
 	colorize := func(s string) string {
-		return fmt.Sprintf("%s%s%s", b.borderColor, s, term_utils.Reset)
+		return fmt.Sprintf("%s%s%s", b.borderColor, s, term_utils.ResetCode)
 	}
 
 	multiColorize := func(strs ...string) string {
@@ -84,11 +86,10 @@ func (b *Box) String() string {
 		for _, s := range strs {
 			out.WriteString(s)
 		}
-		out.WriteString(term_utils.Reset)
+		out.WriteString(term_utils.ResetCode)
 		return out.String()
 	}
 
-	var out strings.Builder
 	var (
 		topLeft     = term_utils.SquareTopLeft
 		topRight    = term_utils.SquareTopRight
@@ -109,7 +110,7 @@ func (b *Box) String() string {
 	titleLen := len(b.title)
 	spaceTitle := (totalLength - titleLen) / 2
 
-	out.WriteString(
+	b.builder.WriteString(
 		multiColorize(
 			topLeft,
 			strings.Repeat(term_utils.HorizontalLine, spaceTitle),
@@ -120,7 +121,7 @@ func (b *Box) String() string {
 	)
 
 	for range b.padding.top {
-		out.WriteString(
+		b.builder.WriteString(
 			multiColorize(
 				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
@@ -130,25 +131,25 @@ func (b *Box) String() string {
 	}
 
 	for _, message := range b.messages {
-		mLen := StringLen(message)
-		out.WriteString(colorize(term_utils.VerticalLine))
-		out.WriteString(strings.Repeat(" ", b.padding.left))
+		mLen := term_utils.StringLen(message)
+		b.builder.WriteString(colorize(term_utils.VerticalLine))
+		b.builder.WriteString(strings.Repeat(" ", b.padding.left))
 		if !b.centeredText {
 			rightSpace := maxLength - mLen
-			out.WriteString(message)
-			out.WriteString(strings.Repeat(" ", rightSpace))
+			b.builder.WriteString(message)
+			b.builder.WriteString(strings.Repeat(" ", rightSpace))
 		} else {
 			leftSpaceLen := (maxLength - mLen) / 2
-			out.WriteString(strings.Repeat(" ", leftSpaceLen))
-			out.WriteString(message)
-			out.WriteString(strings.Repeat(" ", leftSpaceLen))
+			b.builder.WriteString(strings.Repeat(" ", leftSpaceLen))
+			b.builder.WriteString(message)
+			b.builder.WriteString(strings.Repeat(" ", leftSpaceLen))
 		}
-		out.WriteString(strings.Repeat(" ", b.padding.right))
-		out.WriteString(colorize(term_utils.VerticalLine + "\n"))
+		b.builder.WriteString(strings.Repeat(" ", b.padding.right))
+		b.builder.WriteString(colorize(term_utils.VerticalLine + "\n"))
 	}
 
 	for range b.padding.bottom {
-		out.WriteString(
+		b.builder.WriteString(
 			multiColorize(
 				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
@@ -157,7 +158,7 @@ func (b *Box) String() string {
 		)
 	}
 
-	out.WriteString(
+	b.builder.WriteString(
 		multiColorize(
 			bottomLeft,
 			strings.Repeat(term_utils.HorizontalLine, maxLength+b.padding.left+b.padding.right),
@@ -165,7 +166,7 @@ func (b *Box) String() string {
 		),
 	)
 
-	return out.String()
+	return b.builder.String()
 }
 
 func (b *Box) Lines() []string {
@@ -208,19 +209,10 @@ func (b *Box) WithColoredBorder(color string) *Box {
 	return b
 }
 
-func (b *Box) WithSize(width, height int) *Box {
-	if width <= 5 || height <= 5 {
-		return b
-	}
-	b.width = width
-	b.height = height
-	return b
-}
-
 func MaxLength(messages []string) int {
 	maxLength := 0
 	for _, m := range messages {
-		length := utf8.RuneCountInString(StripAnsi(m))
+		length := utf8.RuneCountInString(term_utils.StripAnsi(m))
 		if length > maxLength {
 			maxLength = length
 		}

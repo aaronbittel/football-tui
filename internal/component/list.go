@@ -1,13 +1,13 @@
 package component
 
 import (
-	"fmt"
 	"strings"
 	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
 )
 
 type List struct {
+	builder  strings.Builder
 	items    []string
 	Selected int
 	padding  Padding
@@ -18,6 +18,7 @@ type List struct {
 
 func NewList(items ...string) *List {
 	return &List{
+		builder: strings.Builder{},
 		row:     1,
 		col:     1,
 		items:   items,
@@ -26,7 +27,7 @@ func NewList(items ...string) *List {
 }
 
 func (l *List) String() string {
-	b := new(strings.Builder)
+	defer l.builder.Reset()
 
 	for _, item := range l.items {
 		length := utf8.RuneCountInString(item)
@@ -37,19 +38,19 @@ func (l *List) String() string {
 
 	for i, item := range l.items {
 		if i == l.Selected {
-			b.WriteString(term_utils.BgRedFgWhite)
+			l.builder.WriteString(term_utils.BgRedFgWhite)
 		}
-		b.WriteString(strings.Repeat(" ", l.padding.left))
-		b.WriteString(item)
-		b.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
-		b.WriteString(strings.Repeat(" ", l.padding.right))
+		l.builder.WriteString(strings.Repeat(" ", l.padding.left))
+		l.builder.WriteString(item)
+		l.builder.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+		l.builder.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
-			b.WriteString(term_utils.Reset)
+			l.builder.WriteString(term_utils.ResetCode)
 		}
-		b.WriteString("\n")
+		l.builder.WriteString("\n")
 	}
 
-	return b.String()
+	return l.builder.String()
 }
 
 func (l *List) At(row, col int) *List {
@@ -66,48 +67,58 @@ func (b *List) Lines() []string {
 	return strings.Split(b.String(), "\n")
 }
 
-func (l *List) Next() {
+func (l *List) Next() string {
 	if l.Selected+1 >= len(l.items) {
-		return
+		return ""
 	}
 
-	l.removeHighlight()
+	removeInstructions := l.removeHighlight()
 	l.Selected++
-	l.addHighlight()
-
+	addInstructions := l.addHighlight()
+	return removeInstructions + addInstructions
 }
 
-func (l List) removeHighlight() {
-	term_utils.MoveCursor(l.row+l.Selected, l.col)
-	fmt.Print(strings.Repeat(" ", l.maxLen+l.padding.right+l.padding.left))
+func (l List) removeHighlight() string {
+	defer l.builder.Reset()
 
-	term_utils.MoveCursor(l.row+l.Selected, l.col)
+	l.builder.WriteString(term_utils.MoveCur(l.row+l.Selected, l.col))
+	l.builder.WriteString(strings.Repeat(" ", l.maxLen+l.padding.right+l.padding.left))
+
+	l.builder.WriteString(term_utils.MoveCur(l.row+l.Selected, l.col))
 	item := l.items[l.Selected]
-	fmt.Print(strings.Repeat(" ", l.padding.left))
-	fmt.Print(item)
-	fmt.Print(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
-	fmt.Print(strings.Repeat(" ", l.padding.right))
+	l.builder.WriteString(strings.Repeat(" ", l.padding.left))
+	l.builder.WriteString(item)
+	l.builder.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+	l.builder.WriteString(strings.Repeat(" ", l.padding.right))
+
+	return l.builder.String()
 }
 
-func (l List) addHighlight() {
-	term_utils.MoveCursor(l.row+l.Selected, l.col)
+func (l List) addHighlight() string {
+	defer l.builder.Reset()
+
+	l.builder.WriteString(term_utils.MoveCur(l.row+l.Selected, l.col))
 	item := l.items[l.Selected]
-	fmt.Print(term_utils.BgRedFgWhite)
-	fmt.Print(strings.Repeat(" ", l.padding.left))
-	fmt.Print(item)
-	fmt.Print(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
-	fmt.Print(strings.Repeat(" ", l.padding.right))
-	fmt.Print(term_utils.Reset)
+	l.builder.WriteString(term_utils.BgRedFgWhite)
+	l.builder.WriteString(strings.Repeat(" ", l.padding.left))
+	l.builder.WriteString(item)
+	l.builder.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+	l.builder.WriteString(strings.Repeat(" ", l.padding.right))
+	l.builder.WriteString(term_utils.ResetCode)
+
+	return l.builder.String()
 }
 
-func (l *List) Prev() {
+func (l *List) Prev() string {
 	if l.Selected-1 < 0 {
-		return
+		return ""
 	}
 
-	l.removeHighlight()
+	removeInstructions := l.removeHighlight()
 	l.Selected--
-	l.addHighlight()
+	addInstructions := l.addHighlight()
+
+	return removeInstructions + addInstructions
 }
 
 func (l *List) Select(i int) *List {

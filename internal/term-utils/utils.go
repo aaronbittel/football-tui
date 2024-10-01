@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 	"unicode/utf8"
@@ -23,6 +24,42 @@ const (
 	MoveCursorUpCode     = "\033[A"
 	ResetCode            = "\033[m"
 )
+
+func ClearLineInst(pos ...int) string {
+	var b strings.Builder
+	switch len(pos) {
+	case 1:
+		b.WriteString(MoveCur(pos[0], 1))
+	case 2:
+		b.WriteString(MoveCur(pos[0], pos[1]))
+	}
+	b.WriteString(ClearLineCode)
+	return b.String()
+}
+
+func MoveCur(row, col int) string {
+	return fmt.Sprintf("\033[%d;%dH", row, col)
+}
+
+func MoveCurLeft(count ...int) string {
+	var b strings.Builder
+
+	n := 1
+	if len(count) > 0 {
+		n = count[0]
+	}
+	b.WriteString(fmt.Sprintf("\033[%dD", n))
+
+	return b.String()
+}
+
+func MoveCurDown() string {
+	return MoveCurLeft() + fmt.Sprint(MoveCursorDownCode)
+}
+
+func MoveCurUp() string {
+	return MoveCurLeft() + fmt.Sprint(MoveCursorUpCode)
+}
 
 var (
 	ansiRegex = regexp.MustCompile("[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")
@@ -83,7 +120,8 @@ func MoveCursor(row, col int) {
 }
 
 func GetSize(fd int) (rows, cols int, err error) {
-	return term.GetSize(fd)
+	width, height, err := term.GetSize(fd)
+	return height, width, err
 }
 
 func SaveCursorPos() {
