@@ -124,10 +124,4 @@ func quicksortHelper(
 func Quicksort(columnCh chan<- ColumnGraphData, nums []int) {
 	defer close(columnCh)
 	quicksortHelper(columnCh, nums, 0, len(nums)-1, map[int]string{})
-
-	columnCh <- NewColumnGraphData(
-		slices.Clone(nums),
-		map[int]string{},
-		"Quicksort completed",
-	)
 }

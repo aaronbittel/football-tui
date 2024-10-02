@@ -16,6 +16,7 @@ func Selectionsort(columnCh chan<- ColumnGraphData, nums []int) {
 		minVal := nums[i]
 		minIdx := i
 		for j := 1 + i; j < len(nums); j++ {
+
 			colors[minIdx] = term_utils.Green
 			colors[j] = term_utils.Blue
 			columnCh <- NewColumnGraphData(
@@ -24,6 +25,7 @@ func Selectionsort(columnCh chan<- ColumnGraphData, nums []int) {
 				fmt.Sprintf("Comparing current min value %s to %s",
 					term_utils.Colorize(minVal, term_utils.Green),
 					term_utils.Colorize(nums[j], term_utils.Blue)))
+
 			if nums[j] < minVal {
 				oldMinVal := minVal
 				oldMinIdx := minIdx
@@ -38,6 +40,7 @@ func Selectionsort(columnCh chan<- ColumnGraphData, nums []int) {
 						term_utils.Colorize(minVal, term_utils.Green),
 						term_utils.Colorize(minVal, term_utils.Green),
 						term_utils.Colorize(oldMinVal, term_utils.Blue)))
+
 				delete(colors, oldMinIdx)
 				delete(colors, minIdx)
 			}
@@ -54,9 +57,4 @@ func Selectionsort(columnCh chan<- ColumnGraphData, nums []int) {
 				"%s is now locked",
 				term_utils.Colorize(nums[i], term_utils.Orange)))
 	}
-
-	columnCh <- NewColumnGraphData(
-		slices.Clone(nums),
-		map[int]string{},
-		"Selectionsort completed")
 }

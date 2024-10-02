@@ -11,12 +11,6 @@ func Mergesort(columnCh chan<- ColumnGraphData, nums []int) {
 	defer close(columnCh)
 	colors := make(map[int]string)
 	mergesortHelper(columnCh, colors, nums, 0, len(nums)-1)
-
-	columnCh <- NewColumnGraphData(
-		slices.Clone(nums),
-		map[int]string{},
-		"Mergesort completed",
-	)
 }
 
 func mergesortHelper(

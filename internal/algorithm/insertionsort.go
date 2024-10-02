@@ -54,8 +54,4 @@ func Insertionsort(columnCh chan<- ColumnGraphData, nums []int) {
 		delete(colors, i)
 	}
 
-	columnCh <- NewColumnGraphData(
-		slices.Clone(nums),
-		map[int]string{},
-		term_utils.Colorize("Insertionsort complete!", term_utils.Green))
 }

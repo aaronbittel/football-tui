@@ -48,9 +48,4 @@ func Bubblesort(columnCh chan<- ColumnGraphData, nums []int) {
 				term_utils.Colorize(nums[i], term_utils.Orange)),
 		)
 	}
-	columnCh <- NewColumnGraphData(
-		slices.Clone(nums),
-		map[int]string{},
-		"Bubblesort completed",
-	)
 }
