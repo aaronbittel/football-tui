@@ -19,41 +19,6 @@ type Box struct {
 	borderColor    string
 }
 
-type Padding struct {
-	top    int
-	right  int
-	bottom int
-	left   int
-}
-
-func NewPadding(ps ...int) Padding {
-	var p Padding
-
-	switch len(ps) {
-	case 4:
-		p.top = ps[0]
-		p.right = ps[1]
-		p.bottom = ps[2]
-		p.left = ps[3]
-	case 3:
-		p.top = ps[0]
-		p.right = ps[1]
-		p.bottom = ps[1]
-		p.left = ps[2]
-	case 2:
-		p.top = ps[0]
-		p.right = ps[1]
-		p.bottom = ps[0]
-		p.left = ps[1]
-	case 1:
-		p.top = ps[0]
-		p.right = ps[0]
-		p.bottom = ps[0]
-		p.left = ps[0]
-	}
-	return p
-}
-
 func NewBox(messages ...string) *Box {
 	return &Box{
 		builder:  strings.Builder{},
@@ -64,18 +29,7 @@ func NewBox(messages ...string) *Box {
 	}
 }
 
-func (b *Box) Update(title string, messages ...string) {
-	if title != "" {
-		b.title = " " + title + " "
-	}
-	b.messages = messages
-	Clear(b)
-	Print(b)
-}
-
 func (b *Box) String() string {
-	defer b.builder.Reset()
-
 	colorize := func(s string) string {
 		return fmt.Sprintf("%s%s%s", b.borderColor, s, term_utils.ResetCode)
 	}
@@ -90,6 +44,7 @@ func (b *Box) String() string {
 		return out.String()
 	}
 
+	var out strings.Builder
 	var (
 		topLeft     = term_utils.SquareTopLeft
 		topRight    = term_utils.SquareTopRight
@@ -110,7 +65,7 @@ func (b *Box) String() string {
 	titleLen := len(b.title)
 	spaceTitle := (totalLength - titleLen) / 2
 
-	b.builder.WriteString(
+	out.WriteString(
 		multiColorize(
 			topLeft,
 			strings.Repeat(term_utils.HorizontalLine, spaceTitle),
@@ -121,7 +76,7 @@ func (b *Box) String() string {
 	)
 
 	for range b.padding.top {
-		b.builder.WriteString(
+		out.WriteString(
 			multiColorize(
 				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
@@ -132,24 +87,24 @@ func (b *Box) String() string {
 
 	for _, message := range b.messages {
 		mLen := term_utils.StringLen(message)
-		b.builder.WriteString(colorize(term_utils.VerticalLine))
-		b.builder.WriteString(strings.Repeat(" ", b.padding.left))
+		out.WriteString(colorize(term_utils.VerticalLine))
+		out.WriteString(strings.Repeat(" ", b.padding.left))
 		if !b.centeredText {
 			rightSpace := maxLength - mLen
-			b.builder.WriteString(message)
-			b.builder.WriteString(strings.Repeat(" ", rightSpace))
+			out.WriteString(message)
+			out.WriteString(strings.Repeat(" ", rightSpace))
 		} else {
 			leftSpaceLen := (maxLength - mLen) / 2
-			b.builder.WriteString(strings.Repeat(" ", leftSpaceLen))
-			b.builder.WriteString(message)
-			b.builder.WriteString(strings.Repeat(" ", leftSpaceLen))
+			out.WriteString(strings.Repeat(" ", leftSpaceLen))
+			out.WriteString(message)
+			out.WriteString(strings.Repeat(" ", leftSpaceLen))
 		}
-		b.builder.WriteString(strings.Repeat(" ", b.padding.right))
-		b.builder.WriteString(colorize(term_utils.VerticalLine + "\n"))
+		out.WriteString(strings.Repeat(" ", b.padding.right))
+		out.WriteString(colorize(term_utils.VerticalLine + "\n"))
 	}
 
 	for range b.padding.bottom {
-		b.builder.WriteString(
+		out.WriteString(
 			multiColorize(
 				term_utils.VerticalLine,
 				strings.Repeat(" ", maxLength+b.padding.left+b.padding.right),
@@ -158,7 +113,7 @@ func (b *Box) String() string {
 		)
 	}
 
-	b.builder.WriteString(
+	out.WriteString(
 		multiColorize(
 			bottomLeft,
 			strings.Repeat(term_utils.HorizontalLine, maxLength+b.padding.left+b.padding.right),
@@ -166,16 +121,39 @@ func (b *Box) String() string {
 		),
 	)
 
-	return b.builder.String()
+	return out.String()
 }
 
 func (b *Box) Lines() []string {
 	return strings.Split(b.String(), "\n")
 }
 
-func (b *Box) At(row, col int) *Box {
+func (b Box) Size() (rows, cols int) {
+	lines := b.Lines()
+	return len(lines), term_utils.StringLen(lines[0])
+}
+
+func (b *Box) Update(updated int) string {
+	//HACK: improve this
+	// Right now this only works for speed box
+	return fmt.Sprintf("%s%d", term_utils.MoveCur(b.row+1, b.col+2), updated)
+}
+
+func (b *Box) At(row int, optCol ...int) *Box {
+	var col int = 1
+	if len(optCol) >= 1 {
+		col = max(optCol[0], 1)
+	}
+
 	b.row = row
 	b.col = col
+	return b
+}
+
+func (b *Box) Centered(width int) *Box {
+	maxLength := MaxLength(b.messages)
+	totalLength := maxLength + b.padding.left + b.padding.right
+	b.col = (width - totalLength) / 2
 	return b
 }
 
@@ -224,11 +202,37 @@ func (b Box) Pos() (row, col int) {
 	return b.row, b.col
 }
 
-func Clear(c Clearer) {
-	height, width := Mask(c)
-	row, col := c.Pos()
-	for i := range height {
-		term_utils.MoveCursor(row+i, col)
-		fmt.Print(strings.Repeat(" ", width))
+type Padding struct {
+	top    int
+	right  int
+	bottom int
+	left   int
+}
+
+func NewPadding(ps ...int) Padding {
+	var p Padding
+
+	switch len(ps) {
+	case 4:
+		p.top = ps[0]
+		p.right = ps[1]
+		p.bottom = ps[2]
+		p.left = ps[3]
+	case 3:
+		p.top = ps[0]
+		p.right = ps[1]
+		p.bottom = ps[1]
+		p.left = ps[2]
+	case 2:
+		p.top = ps[0]
+		p.right = ps[1]
+		p.bottom = ps[0]
+		p.left = ps[1]
+	case 1:
+		p.top = ps[0]
+		p.right = ps[0]
+		p.bottom = ps[0]
+		p.left = ps[0]
 	}
+	return p
 }

@@ -12,23 +12,28 @@ type Statusbar struct {
 	rows    int
 	cols    int
 	message string
+	buf     *Buf
 
 	mutex *sync.Mutex
 }
 
-func NewStatusbar(rows, cols int) *Statusbar {
+func NewStatusbar(rows, cols int, buf *Buf) *Statusbar {
 	return &Statusbar{
+		buf:   buf,
 		rows:  rows,
 		cols:  cols,
 		mutex: &sync.Mutex{},
 	}
 }
 
+func (s Statusbar) Pos() (row, col int) {
+	return s.rows - 1, 1
+}
+
 func (s Statusbar) String() string {
 	var b strings.Builder
 	b.WriteString(term_utils.Lightgray)
 
-	b.WriteString(term_utils.MoveCur(s.rows-1, 1))
 	b.WriteString(strings.Repeat(term_utils.Underscore, s.cols))
 	b.WriteString(term_utils.ResetCode)
 	return b.String()
@@ -57,9 +62,9 @@ func (s *Statusbar) Set(updated string) string {
 func (s *Statusbar) After(updated string, duration time.Duration) {
 	//TODO: Cant return string from goroutine -> channel?
 	go func() {
-		s.Set(updated)
+		s.buf.Write(s.Set(updated))
 		<-time.After(duration)
-		term_utils.ClearLine(s.rows, 1)
+		s.buf.Write(term_utils.ClearLineInst(s.rows, 1))
 	}()
 }
 

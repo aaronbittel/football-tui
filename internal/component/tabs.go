@@ -13,52 +13,56 @@ type Tabs struct {
 	Selected int
 	row      int
 	col      int
+	Length   int
 }
 
 func NewTabs(headers ...string) *Tabs {
-	return &Tabs{
+	tabs := &Tabs{
 		builder: strings.Builder{},
 		row:     1,
 		col:     1,
 		headers: headers,
 	}
+
+	tabs.Length = term_utils.StringLen(strings.Split(tabs.String(), "\n")[0])
+	return tabs
 }
 
 func (t Tabs) String() string {
-	defer t.builder.Reset()
+	b := new(strings.Builder)
 
-	t.builder.WriteString(term_utils.Lightgray)
-	t.builder.WriteString(term_utils.SquareTopLeft)
+	b.WriteString(term_utils.Lightgray)
+	b.WriteString(term_utils.SquareTopLeft)
 	for i, h := range t.headers {
-		t.builder.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			t.builder.WriteString(term_utils.SquareDownHorizontal)
+			b.WriteString(term_utils.SquareDownHorizontal)
 		}
 	}
-	t.builder.WriteString(term_utils.SquareTopRight + "\n")
+	b.WriteString(term_utils.SquareTopRight + "\n")
 
-	t.builder.WriteString(term_utils.VerticalLine)
+	b.WriteString(term_utils.VerticalLine)
 	for i, h := range t.headers {
 		if t.Selected == i {
-			t.builder.WriteString(term_utils.ResetCode)
+			b.WriteString(term_utils.ResetCode)
 		}
-		t.builder.WriteString(fmt.Sprintf(" %s %s", h, term_utils.ResetCode))
-		t.builder.WriteString(term_utils.Lightgray)
-		t.builder.WriteString(term_utils.VerticalLine)
+		b.WriteString(fmt.Sprintf(" %s %s", h, term_utils.ResetCode))
+		b.WriteString(term_utils.Lightgray)
+		b.WriteString(term_utils.VerticalLine)
 	}
-	t.builder.WriteString("\n")
+	b.WriteString("\n")
 
-	t.builder.WriteString(term_utils.SquareBottomLeft)
+	b.WriteString(term_utils.SquareBottomLeft)
 	for i, h := range t.headers {
-		t.builder.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			t.builder.WriteString(term_utils.SquareUpHorizontal)
+			b.WriteString(term_utils.SquareUpHorizontal)
 		}
 	}
-	t.builder.WriteString(term_utils.SquareBottomRight)
-	t.builder.WriteString(term_utils.ResetCode)
+	b.WriteString(term_utils.SquareBottomRight)
+	b.WriteString(term_utils.ResetCode)
 
-	return t.builder.String()
+	return b.String()
 }
 
 func (t *Tabs) Select(i int) *Tabs {
@@ -107,7 +111,17 @@ func (t *Tabs) GetSelected() string {
 	return t.headers[t.Selected]
 }
 
-func (t *Tabs) At(row, col int) *Tabs {
+func (t *Tabs) Centered(width int) *Tabs {
+	t.col = (width - t.Length) / 2
+	return t
+}
+
+func (t *Tabs) At(row int, optCol ...int) *Tabs {
+	var col int = 1
+	if len(optCol) > 1 {
+		col = max(optCol[0], 1)
+	}
+
 	t.row = row
 	t.col = col
 	return t

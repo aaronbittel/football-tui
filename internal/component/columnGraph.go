@@ -43,9 +43,8 @@ func NewColumnGraph(nums []int) *ColumnGraph {
 	}
 }
 
-func (cgf *ColumnGraph) Idle() string {
+func (cgf *ColumnGraph) String() string {
 	var b strings.Builder
-
 	var char string
 
 	for row := cgf.colParams.maxVal; row >= 1; row-- {
@@ -68,6 +67,10 @@ func (cgf *ColumnGraph) Idle() string {
 	return b.String()
 }
 
+func (cgf ColumnGraph) Pos() (row, col int) {
+	return cgf.row, cgf.col
+}
+
 func (cgf ColumnGraph) Nums() []int {
 	return slices.Clone(cgf.originalNums)
 }
@@ -80,13 +83,40 @@ func (cgf *ColumnGraph) Init(algo *Algorithm) {
 	// Resetting from previous visualization
 	cgf.frames = make([]algorithm.ColumnGraphData, 0, 100)
 	cgf.cursor = 0
+
+	// append "empty" frame because partialUpdate always compares prev with next
+	cgf.frames = append(
+		cgf.frames,
+		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{}, ""),
+	)
+
+	// this is always the first frame of the visualization
+	algoName := algo.Name.String()
+	cgf.frames = append(
+		cgf.frames,
+		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{},
+			fmt.Sprintf("Starting %s visualization", algoName)),
+	)
+
 	for col := range columnCh {
 		cgf.frames = append(cgf.frames, col)
 	}
 
-	cgf.algo = algo
+	sortedNums := slices.Clone(cgf.originalNums)
+	slices.Sort(sortedNums)
 
-	cgf.legendBox = cgf.createLegend(cgf.algo.legend)
+	// this is always the last frame of the visualization
+	cgf.frames = append(
+		cgf.frames,
+		algorithm.NewColumnGraphData(sortedNums, map[int]string{},
+			fmt.Sprintf(term_utils.Colorize(
+				fmt.Sprintf("Finished %s visualization", algoName),
+				term_utils.BoldGreen,
+			))),
+	)
+
+	cgf.algo = algo
+	cgf.legendBox = cgf.createLegend(cgf.algo.Legend)
 	Print(cgf.legendBox)
 }
 
@@ -110,6 +140,7 @@ func (cgf ColumnGraph) partialUpdate(prev, next algorithm.ColumnGraphData) strin
 		b.WriteString(cgf.removeColumn(prev.Nums()[i], i))
 		b.WriteString(cgf.printNewCol(next.Nums()[i], i, next.Colors()[i]))
 	}
+
 	b.WriteString(cgf.updateDescription(prev.Desc(), next.Desc()))
 
 	return b.String()
@@ -120,80 +151,30 @@ func (cgf *ColumnGraph) Next() string {
 		return ""
 	}
 
-	updateInstructions := cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor+1])
+	updateInst := cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor+1])
 	cgf.cursor++
-	return updateInstructions
+	return updateInst
 }
 
-func (cgf *ColumnGraph) Prev() {
+func (cgf ColumnGraph) Size() (rows, cols int) {
+	lines := strings.Split(cgf.String(), "\n")
+	// +2 for description
+	return len(lines) + 2, len(lines[0])
+}
+
+func (cgf *ColumnGraph) Prev() string {
 	if cgf.cursor-1 < 0 {
-		return
+		return ""
 	}
 
-	cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor-1])
+	updateInst := cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor-1])
 	cgf.cursor--
-}
-
-func (cgf ColumnGraph) Print() {
-	var b strings.Builder
-
-	var char string
-	frame := cgf.frames[cgf.cursor]
-
-	for row := cgf.colParams.maxVal; row >= 1; row-- {
-		for i, n := range frame.Nums() {
-			if n >= row {
-				if color, found := frame.Colors()[i]; found {
-					char = fmt.Sprint(color, term_utils.FullBlock, term_utils.ResetCode)
-				} else {
-					char = term_utils.FullBlock
-				}
-			} else {
-				char = " "
-			}
-			b.WriteString(char + strings.Repeat(" ", cgf.colParams.spaces))
-		}
-		b.WriteString("\n")
-	}
-
-	for _, n := range frame.Nums() {
-		s := cgf.colParams.spaces - len(fmt.Sprint(n)) + 1
-		b.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
-	}
-
-	width := len(cgf.originalNums) + (len(cgf.originalNums)-1)*cgf.colParams.spaces
-
-	b.WriteString("\n")
-	leftPad := (width - term_utils.StringLen(frame.Desc())) / 2
-	if leftPad > 0 {
-		b.WriteString(strings.Repeat(" ", leftPad))
-	}
-	b.WriteString(frame.Desc())
-
-	for i, line := range strings.Split(b.String(), "\n") {
-		term_utils.MoveCursor(cgf.row+i, cgf.col)
-		fmt.Print(line)
-	}
+	return updateInst
 }
 
 func (cgf *ColumnGraph) At(row, col int) {
 	cgf.row = row
 	cgf.col = col
-}
-
-func (cgf ColumnGraph) PrintIdle() {
-	for i, line := range strings.Split(cgf.Idle(), "\n") {
-		term_utils.MoveCursor(cgf.row+i, cgf.col)
-		fmt.Print(line)
-	}
-}
-
-func (cgf ColumnGraph) Clear() {
-	width := len(cgf.originalNums) + (len(cgf.originalNums)-1)*cgf.colParams.spaces
-	for i := range strings.Split(cgf.Idle(), "\n") {
-		term_utils.MoveCursor(cgf.row+i, cgf.col)
-		fmt.Print(strings.Repeat(" ", width))
-	}
 }
 
 func (cgf ColumnGraph) moveCursorTopColumn(colHeight, colIdx int) string {
@@ -225,6 +206,7 @@ func (cgf ColumnGraph) printNewCol(colHeight, colIdx int, color string) string {
 
 	// Move cursor to first column segment
 	b.WriteString(term_utils.MoveCur(cgf.row+cgf.height-2, cgf.col+colIdx*(cgf.colParams.spaces+1)))
+
 	b.WriteString(color)
 	for range colHeight {
 		b.WriteString(term_utils.FullBlock)
@@ -252,25 +234,29 @@ func (cgf ColumnGraph) updateDescription(prev, next string) string {
 	return b.String()
 }
 
-func (cgf ColumnGraph) clearGraph() {
+func (cgf ColumnGraph) ClearGraph() string {
+	var b strings.Builder
 	for i := range cgf.height {
-		term_utils.MoveCursor(cgf.row+i, cgf.col)
-		//FIX: +1 because if last number has more than 1 digit the width is
+		b.WriteString(term_utils.MoveCur(cgf.row+i, cgf.col))
+		//HACK: +1 because if last number has more than 1 digit the width is
 		// greater than cgf.width
-		fmt.Print(strings.Repeat(" ", cgf.width+1))
+		b.WriteString(fmt.Sprint(strings.Repeat(" ", cgf.width+1)))
 	}
+	return b.String()
 }
 
-func (cgf ColumnGraph) clearDescription() {
-	term_utils.MoveCursor(cgf.DescCol(), cgf.col)
-	fmt.Print(strings.Repeat(" ", cgf.width))
+func (cgf ColumnGraph) ClearDescription() string {
+	var b strings.Builder
+	b.WriteString(term_utils.MoveCur(cgf.DescCol(), cgf.col))
+	b.WriteString(fmt.Sprint(strings.Repeat(" ", cgf.width)))
+	return b.String()
 }
 
-func (cgf ColumnGraph) Reset() {
-	cgf.clearGraph()
-	cgf.clearDescription()
-	Print(cgf.legendBox)
-	cgf.PrintIdle()
+func (cgf ColumnGraph) Reset() string {
+	clearGraphInst := cgf.ClearGraph()
+	clearDescInst := cgf.ClearDescription()
+	// printGraphInst := cgf.String()
+	return clearGraphInst + clearDescInst
 }
 
 func (cgf ColumnGraph) DescCol() int {

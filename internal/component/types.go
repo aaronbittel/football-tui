@@ -1,22 +1,56 @@
 package component
 
 import (
+	"tui/internal/algorithm"
 	term_utils "tui/internal/term-utils"
 )
 
-type AlgorithmFn func(chan<- ColumnGraphData, []int)
+type Visualizer interface {
+	Next() string
+	Prev() string
+	Init(algo *Algorithm)
+	At(row, col int)
+	Printer
+	Clearer
+}
+
+type AlgorithmFn func(chan<- algorithm.ColumnGraphData, []int)
 
 type AlgoName int
+
+func (a AlgoName) String() string {
+	switch a {
+	case Bubble:
+		return "Bubblesort"
+	case Selection:
+		return "Selectionsort"
+	case Insertion:
+		return "Insertionsort"
+	case Quick:
+		return "Quicksort"
+	case Merge:
+		return "Mergesort"
+	case Heap:
+		return "Heapsort"
+	default:
+		panic("not implemented")
+	}
+}
 
 const (
 	Bubble AlgoName = iota
 	Selection
+	Insertion
 	Quick
+	Merge
+	Heap
+	NotImplemented
 )
 
 type Algorithm struct {
+	Name        AlgoName
 	AlgorithmFn AlgorithmFn
-	legend      []string
+	Legend      []string
 }
 
 func NewAlgorithm(name AlgoName) *Algorithm {
@@ -27,19 +61,29 @@ func NewAlgorithm(name AlgoName) *Algorithm {
 
 	switch name {
 	case Bubble:
-		algo = Bubblesort
-		legend = bubbleLegend
+		algo = algorithm.Bubblesort
+		legend = BubbleLegend
 	case Selection:
-		algo = Selectionsort
-		legend = selectionLegend
+		algo = algorithm.Selectionsort
+		legend = SelectionLegend
+	case Insertion:
+		algo = algorithm.Insertionsort
+		legend = InsertionLegend
 	case Quick:
-		algo = Quicksort
-		legend = quickLegend
+		algo = algorithm.Quicksort
+		legend = QuickLegend
+	case Merge:
+		algo = algorithm.Mergesort
+		legend = MergeLegend
+	case Heap:
+		algo = algorithm.Heapsort
+		legend = HeapLegend
 	}
 
 	return &Algorithm{
+		Name:        name,
 		AlgorithmFn: algo,
-		legend:      legend,
+		Legend:      legend,
 	}
 }
 
@@ -54,28 +98,46 @@ func ToAlgoName(s string) AlgoName {
 		return Bubble
 	case "Selection sort":
 		return Selection
+	case "Insertion sort":
+		return Insertion
 	case "Quick sort":
 		return Quick
+	case "Merge sort":
+		return Merge
+	case "Heap sort":
+		return Heap
 	default:
-		panic("unknown algorithm")
+		return NotImplemented
 	}
 }
 
 var (
-	bubbleLegend = []string{
-		term_utils.Colorize("▣ Current", term_utils.Green),
-		term_utils.Colorize("▣ Compare", term_utils.Blue),
-		term_utils.Colorize("▣ Locked", term_utils.Orange),
+	BubbleLegend = []string{
+		term_utils.Colorize("▣  Current", term_utils.Green),
+		term_utils.Colorize("▣  Compare", term_utils.Blue),
+		term_utils.Colorize("▣  Locked", term_utils.Orange),
 	}
-	selectionLegend = []string{
-		term_utils.Colorize("▣ Lowest", term_utils.Green),
-		term_utils.Colorize("▣ Compare", term_utils.Blue),
-		term_utils.Colorize("▣ Locked", term_utils.Orange),
+	SelectionLegend = []string{
+		term_utils.Colorize("▣  Lowest", term_utils.Green),
+		term_utils.Colorize("▣  Compare", term_utils.Blue),
+		term_utils.Colorize("▣  Locked", term_utils.Orange),
 	}
-	quickLegend = []string{
-		term_utils.Colorize("▣ Current", term_utils.Green),
-		term_utils.Colorize("▣ Compare", term_utils.Blue),
-		term_utils.Colorize("▣ Locked", term_utils.Orange),
-		term_utils.Colorize("▣ !interesting", term_utils.Lightgray),
+	QuickLegend = []string{
+		term_utils.Colorize("▣  Current", term_utils.Green),
+		term_utils.Colorize("▣  Compare", term_utils.Blue),
+		term_utils.Colorize("▣  Locked", term_utils.Orange),
+		term_utils.Colorize("▣  !interesting", term_utils.Lightgray),
+	}
+	InsertionLegend = []string{
+		term_utils.Colorize("▣  Current Value", term_utils.Green),
+		term_utils.Colorize("▣  Current Array", term_utils.Lightgray),
+	}
+	MergeLegend = []string{
+		term_utils.Colorize("▣  Left side", term_utils.Green),
+		term_utils.Colorize("▣  Right side", term_utils.Blue),
+		term_utils.Colorize("▣  !interesting", term_utils.Lightgray),
+	}
+	HeapLegend = []string{
+		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed),
 	}
 )

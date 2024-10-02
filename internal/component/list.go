@@ -26,8 +26,13 @@ func NewList(items ...string) *List {
 	}
 }
 
+func moveToNewLine(row *int, col int) string {
+	(*row)++
+	return term_utils.MoveCur(*row, col)
+}
+
 func (l *List) String() string {
-	defer l.builder.Reset()
+	b := new(strings.Builder)
 
 	for _, item := range l.items {
 		length := utf8.RuneCountInString(item)
@@ -38,19 +43,19 @@ func (l *List) String() string {
 
 	for i, item := range l.items {
 		if i == l.Selected {
-			l.builder.WriteString(term_utils.BgRedFgWhite)
+			b.WriteString(term_utils.BgRedFgWhite)
 		}
-		l.builder.WriteString(strings.Repeat(" ", l.padding.left))
-		l.builder.WriteString(item)
-		l.builder.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
-		l.builder.WriteString(strings.Repeat(" ", l.padding.right))
+		b.WriteString(strings.Repeat(" ", l.padding.left))
+		b.WriteString(item)
+		b.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+		b.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
-			l.builder.WriteString(term_utils.ResetCode)
+			b.WriteString(term_utils.ResetCode)
 		}
-		l.builder.WriteString("\n")
+		b.WriteString("\n")
 	}
 
-	return l.builder.String()
+	return b.String()
 }
 
 func (l *List) At(row, col int) *List {

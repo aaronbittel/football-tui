@@ -110,7 +110,8 @@ func (t Tree) PartialUpdate(prev, next algorithm.ColumnGraphData) string {
 		b.WriteString(t.printNode(nodeTopRow, nodeTopCol, next.Nums(), i, color))
 	}
 
-	height := t.row + (t.level+1)*3 + t.level*2 + 2
+	height := t.row + t.Height() + 1
+
 	b.WriteString(term_utils.ClearLineInst(height, t.col))
 	b.WriteString(term_utils.MoveCur(height, t.col))
 	b.WriteString(next.Desc())
@@ -118,7 +119,13 @@ func (t Tree) PartialUpdate(prev, next algorithm.ColumnGraphData) string {
 	return b.String()
 }
 
-func (t *Tree) Reset() {
+func (t *Tree) Reset() string {
+	//TODO: HERE
+	return ""
+}
+
+func (t Tree) Pos() (row, col int) {
+	return t.row, t.col
 }
 
 func (t *Tree) Next() string {
@@ -131,13 +138,14 @@ func (t *Tree) Next() string {
 	return updateInstructions
 }
 
-func (t *Tree) Prev() {
+func (t *Tree) Prev() string {
 	if t.Cursor-1 < 0 {
-		return
+		return ""
 	}
 
-	t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor-1])
+	updateInst := t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor-1])
 	t.Cursor--
+	return updateInst
 }
 
 func (t *Tree) At(row, col int) {
@@ -187,13 +195,12 @@ func (t Tree) String() string {
 		}
 		conn++
 	}
+
+	b.WriteString(term_utils.ResetCode)
 	return b.String()
 }
 
 func (t Tree) printNode(row, col int, nums []int, idx int, colors ...string) string {
-	if len(colors) >= 1 {
-		fmt.Print(colors[0])
-	}
 	isLeft := func(i int) bool {
 		return i != 0 && i%2 == 1
 	}
@@ -245,6 +252,10 @@ func (t Tree) printNode(row, col int, nums []int, idx int, colors ...string) str
 
 	helper.WriteString(term_utils.HorizontalLine + term_utils.RoundedBottomRight + "\n")
 
+	if len(colors) >= 1 {
+		b.WriteString(colors[0])
+	}
+
 	for i, line := range strings.Split(helper.String(), "\n") {
 		if value < 10 {
 			b.WriteString(term_utils.MoveCur(row+i, col-2))
@@ -260,6 +271,17 @@ func (t Tree) printNode(row, col int, nums []int, idx int, colors ...string) str
 	b.WriteString(term_utils.ResetCode)
 
 	return b.String()
+}
+
+func (t Tree) Height() int {
+	return (t.level+1)*3 + (t.level+1-1)*1
+}
+
+func (t Tree) Size() (rows, cols int) {
+	//HACK: cols = ??
+
+	// rows+2 to clear description
+	return t.Height() + 2, 64
 }
 
 func (t Tree) topPositions() (topPositions [][]int) {
