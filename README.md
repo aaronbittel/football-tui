@@ -85,3 +85,4 @@ make help
 
 - Currently, the positions of widgets are hard-coded, which requires a minimum
 terminal size to display everything correctly.
+- Heapsort not quite finished yet

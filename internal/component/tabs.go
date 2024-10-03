@@ -118,7 +118,7 @@ func (t *Tabs) Centered(width int) *Tabs {
 
 func (t *Tabs) At(row int, optCol ...int) *Tabs {
 	var col int = 1
-	if len(optCol) > 1 {
+	if len(optCol) >= 1 {
 		col = max(optCol[0], 1)
 	}
 

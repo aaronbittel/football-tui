@@ -64,7 +64,7 @@ func main() {
 		WithColoredBorder(term_utils.Blue).
 		WithRoundedCorners().
 		WithPadding(1, 3).
-		At(2).Centered(cols)
+		At(2, 34)
 	buf.Write(component.Print(titleBox))
 
 	algoList := component.NewList(
@@ -77,11 +77,14 @@ func main() {
 	buf.Write(component.Print(algoList))
 
 	controlBoxContent := createControlBoxContent()
-	controlBox := component.NewBox(controlBoxContent...).WithTitle("Controls").At(30).Centered(cols).WithColoredBorder(term_utils.Lightgray).
-		WithRoundedCorners()
+	controlBox := component.NewBox(controlBoxContent...).
+		WithTitle("Controls").
+		WithColoredBorder(term_utils.Lightgray).
+		WithRoundedCorners().
+		At(30, 23)
 	buf.Write(component.Print(controlBox))
 
-	categoryTabs := component.NewTabs("Sorting", "Searching", "Graphs").At(7).Centered(cols)
+	categoryTabs := component.NewTabs("Sorting", "Searching", "Graphs").At(7, 36)
 	buf.Write(component.Print(categoryTabs))
 
 	statusbar := component.NewStatusbar(rows, cols, &buf)
