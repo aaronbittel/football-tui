@@ -2,7 +2,9 @@
 
 This is a Terminal-based Algorithm Visualizer (TUI) built with Go. It allows
 you to select from various algorithms and watch their execution unfold
-step-by-step, right in your terminal.
+step-by-step, right in your terminal. This project is developed entirely from
+scratch without the use of any TUI frameworks, utilizing ANSI escape codes for
+terminal control.
 
 ## Table of Contents
 - [Features](#features)
