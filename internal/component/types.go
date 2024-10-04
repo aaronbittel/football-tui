@@ -6,8 +6,9 @@ import (
 )
 
 type Visualizer interface {
-	Next() string
-	Prev() string
+	PrintIdle()
+	Next()
+	Prev()
 	Init(algo *Algorithm)
 	At(row, col int)
 	Printer

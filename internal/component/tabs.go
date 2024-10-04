@@ -8,16 +8,20 @@ import (
 )
 
 type Tabs struct {
+	instrCh chan<- string
+
+	row int
+	col int
+
 	builder  strings.Builder
 	headers  []string
 	Selected int
-	row      int
-	col      int
 	Length   int
 }
 
-func NewTabs(headers ...string) *Tabs {
+func NewTabs(instrCh chan<- string, headers ...string) *Tabs {
 	tabs := &Tabs{
+		instrCh: instrCh,
 		builder: strings.Builder{},
 		row:     1,
 		col:     1,
@@ -28,52 +32,54 @@ func NewTabs(headers ...string) *Tabs {
 	return tabs
 }
 
-func (t Tabs) String() string {
-	b := new(strings.Builder)
+func (t *Tabs) PrintIdle() {
+	t.instrCh <- Print(t)
+}
 
-	b.WriteString(term_utils.Lightgray)
-	b.WriteString(term_utils.SquareTopLeft)
+func (t Tabs) String() string {
+	defer t.builder.Reset()
+
+	t.builder.WriteString(term_utils.Lightgray)
+	t.builder.WriteString(term_utils.SquareTopLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		t.builder.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(term_utils.SquareDownHorizontal)
+			t.builder.WriteString(term_utils.SquareDownHorizontal)
 		}
 	}
-	b.WriteString(term_utils.SquareTopRight + "\n")
+	t.builder.WriteString(term_utils.SquareTopRight + "\n")
 
-	b.WriteString(term_utils.VerticalLine)
+	t.builder.WriteString(term_utils.VerticalLine)
 	for i, h := range t.headers {
 		if t.Selected == i {
-			b.WriteString(term_utils.ResetCode)
+			t.builder.WriteString(term_utils.ResetCode)
 		}
-		b.WriteString(fmt.Sprintf(" %s %s", h, term_utils.ResetCode))
-		b.WriteString(term_utils.Lightgray)
-		b.WriteString(term_utils.VerticalLine)
+		t.builder.WriteString(fmt.Sprintf(" %s %s", h, term_utils.ResetCode))
+		t.builder.WriteString(term_utils.Lightgray)
+		t.builder.WriteString(term_utils.VerticalLine)
 	}
-	b.WriteString("\n")
+	t.builder.WriteString("\n")
 
-	b.WriteString(term_utils.SquareBottomLeft)
+	t.builder.WriteString(term_utils.SquareBottomLeft)
 	for i, h := range t.headers {
-		b.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
+		t.builder.WriteString(repeat(term_utils.HorizontalLine, utf8.RuneCountInString(h)+2))
 		if i != len(t.headers)-1 {
-			b.WriteString(term_utils.SquareUpHorizontal)
+			t.builder.WriteString(term_utils.SquareUpHorizontal)
 		}
 	}
-	b.WriteString(term_utils.SquareBottomRight)
-	b.WriteString(term_utils.ResetCode)
+	t.builder.WriteString(term_utils.SquareBottomRight)
+	t.builder.WriteString(term_utils.ResetCode)
 
-	return b.String()
+	return t.builder.String()
 }
 
-func (t *Tabs) Select(i int) *Tabs {
+func (t *Tabs) Select(i int) {
 	if i < 0 || i >= len(t.headers) {
-		return t
 	}
 	t.Selected = i
-	return t
 }
 
-func (t *Tabs) Next() string {
+func (t *Tabs) Next() {
 	defer t.builder.Reset()
 
 	t.builder.WriteString(t.moveToStartofWord())
@@ -87,7 +93,7 @@ func (t *Tabs) Next() string {
 	t.builder.WriteString(t.moveToStartofWord())
 	t.builder.WriteString(fmt.Sprintf("%s%s", term_utils.ResetCode, t.headers[t.Selected]))
 
-	return t.builder.String()
+	t.instrCh <- t.builder.String()
 }
 
 func (t *Tabs) moveToStartofWord() string {
@@ -101,10 +107,6 @@ func (t *Tabs) moveToStartofWord() string {
 	t.builder.WriteString(term_utils.MoveCur(t.row+1, col))
 
 	return t.builder.String()
-}
-
-func (b *Tabs) Lines() []string {
-	return strings.Split(b.String(), "\n")
 }
 
 func (t *Tabs) GetSelected() string {

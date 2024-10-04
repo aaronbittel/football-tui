@@ -7,18 +7,23 @@ import (
 )
 
 type List struct {
+	instrCh chan<- string
+
+	row int
+	col int
+
 	builder  strings.Builder
 	items    []string
 	Selected int
 	padding  Padding
-	row      int
-	col      int
 	maxLen   int
 }
 
-func NewList(items ...string) *List {
+func NewList(instrCh chan<- string, items ...string) *List {
 	return &List{
+		instrCh: instrCh,
 		builder: strings.Builder{},
+
 		row:     1,
 		col:     1,
 		items:   items,
@@ -26,13 +31,12 @@ func NewList(items ...string) *List {
 	}
 }
 
-func moveToNewLine(row *int, col int) string {
-	(*row)++
-	return term_utils.MoveCur(*row, col)
+func (l *List) PrintIdle() {
+	l.instrCh <- Print(l)
 }
 
 func (l *List) String() string {
-	b := new(strings.Builder)
+	defer l.builder.Reset()
 
 	for _, item := range l.items {
 		length := utf8.RuneCountInString(item)
@@ -43,19 +47,19 @@ func (l *List) String() string {
 
 	for i, item := range l.items {
 		if i == l.Selected {
-			b.WriteString(term_utils.BgRedFgWhite)
+			l.builder.WriteString(term_utils.BgRedFgWhite)
 		}
-		b.WriteString(strings.Repeat(" ", l.padding.left))
-		b.WriteString(item)
-		b.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
-		b.WriteString(strings.Repeat(" ", l.padding.right))
+		l.builder.WriteString(strings.Repeat(" ", l.padding.left))
+		l.builder.WriteString(item)
+		l.builder.WriteString(strings.Repeat(" ", l.maxLen-utf8.RuneCountInString(item)))
+		l.builder.WriteString(strings.Repeat(" ", l.padding.right))
 		if i == l.Selected {
-			b.WriteString(term_utils.ResetCode)
+			l.builder.WriteString(term_utils.ResetCode)
 		}
-		b.WriteString("\n")
+		l.builder.WriteString("\n")
 	}
 
-	return b.String()
+	return l.builder.String()
 }
 
 func (l *List) At(row, col int) *List {
@@ -68,19 +72,15 @@ func (l *List) Pos() (row, col int) {
 	return l.row, l.col
 }
 
-func (b *List) Lines() []string {
-	return strings.Split(b.String(), "\n")
-}
-
-func (l *List) Next() string {
+func (l *List) Next() {
 	if l.Selected+1 >= len(l.items) {
-		return ""
+		return
 	}
 
 	removeInstructions := l.removeHighlight()
 	l.Selected++
 	addInstructions := l.addHighlight()
-	return removeInstructions + addInstructions
+	l.instrCh <- removeInstructions + addInstructions
 }
 
 func (l List) removeHighlight() string {
@@ -114,16 +114,16 @@ func (l List) addHighlight() string {
 	return l.builder.String()
 }
 
-func (l *List) Prev() string {
+func (l *List) Prev() {
 	if l.Selected-1 < 0 {
-		return ""
+		return
 	}
 
 	removeInstructions := l.removeHighlight()
 	l.Selected--
 	addInstructions := l.addHighlight()
 
-	return removeInstructions + addInstructions
+	l.instrCh <- removeInstructions + addInstructions
 }
 
 func (l *List) Select(i int) *List {

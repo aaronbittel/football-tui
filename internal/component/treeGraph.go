@@ -10,6 +10,8 @@ import (
 )
 
 type Tree struct {
+	instrCh chan<- string
+
 	row int
 	col int
 
@@ -21,7 +23,7 @@ type Tree struct {
 	level int
 }
 
-func NewTree(nums []int) *Tree {
+func NewTree(instrCh chan<- string, nums []int) *Tree {
 	level := 0
 	if len(nums) > 1 {
 		level = int(math.Floor(math.Log2(float64(len(nums)))))
@@ -31,11 +33,12 @@ func NewTree(nums []int) *Tree {
 	frames = append(frames, algorithm.NewColumnGraphData(slices.Clone(nums), map[int]string{}, ""))
 
 	return &Tree{
-		nums:   nums,
-		level:  level,
-		Frames: frames,
-		row:    1,
-		col:    1,
+		instrCh: instrCh,
+		nums:    nums,
+		level:   level,
+		Frames:  frames,
+		row:     1,
+		col:     1,
 	}
 }
 
@@ -119,33 +122,33 @@ func (t Tree) PartialUpdate(prev, next algorithm.ColumnGraphData) string {
 	return b.String()
 }
 
-func (t *Tree) Reset() string {
+func (t *Tree) Reset() {
 	//TODO: HERE
-	return ""
+	t.instrCh <- ""
 }
 
 func (t Tree) Pos() (row, col int) {
 	return t.row, t.col
 }
 
-func (t *Tree) Next() string {
+func (t *Tree) Next() {
 	if t.Cursor+1 >= len(t.Frames) {
-		return ""
+		return
 	}
 
 	updateInstructions := t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor+1])
 	t.Cursor++
-	return updateInstructions
+	t.instrCh <- updateInstructions
 }
 
-func (t *Tree) Prev() string {
+func (t *Tree) Prev() {
 	if t.Cursor-1 < 0 {
-		return ""
+		return
 	}
 
 	updateInst := t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor-1])
 	t.Cursor--
-	return updateInst
+	t.instrCh <- updateInst
 }
 
 func (t *Tree) At(row, col int) {
@@ -158,6 +161,10 @@ func (t *Tree) At(row, col int) {
 
 	t.row = row
 	t.col = col
+}
+
+func (t *Tree) PrintIdle() {
+	t.instrCh <- Print(t)
 }
 
 func (t Tree) String() string {

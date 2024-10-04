@@ -50,54 +50,50 @@ func main() {
 		os.Exit(1)
 	}
 
-	buf := component.NewBuf()
+	instrCh := make(chan string)
+	buf := component.NewBuf(instrCh)
+	go buf.ReadLoop()
+	go buf.FlushLoop()
 
-	go func() {
-		ticker := time.NewTicker(time.Millisecond * 30)
-		for {
-			buf.Flush()
-			<-ticker.C
-		}
-	}()
-
-	titleBox := component.NewBox("Terminal Algorithm Visualizer").
+	titleBox := component.NewBox(instrCh, "Terminal Algorithm Visualizer").
 		WithColoredBorder(term_utils.Blue).
 		WithRoundedCorners().
 		WithPadding(1, 3).
 		At(2, 34)
-	buf.Write(component.Print(titleBox))
+	titleBox.PrintIdle()
 
 	algoList := component.NewList(
+		instrCh,
 		"Bubble sort",
 		"Selection sort",
 		"Insertion sort",
 		"Quick sort",
 		"Merge sort",
 		"Heap sort").At(12, 5)
-	buf.Write(component.Print(algoList))
+	algoList.PrintIdle()
 
 	controlBoxContent := createControlBoxContent()
-	controlBox := component.NewBox(controlBoxContent...).
+	controlBox := component.NewBox(instrCh, controlBoxContent...).
 		WithTitle("Controls").
 		WithColoredBorder(term_utils.Lightgray).
 		WithRoundedCorners().
 		At(30, 23)
-	buf.Write(component.Print(controlBox))
+	controlBox.PrintIdle()
 
-	categoryTabs := component.NewTabs("Sorting", "Searching", "Graphs").At(7, 36)
-	buf.Write(component.Print(categoryTabs))
+	categoryTabs := component.NewTabs(instrCh, "Sorting", "Searching", "Graphs").At(7, 36)
+	categoryTabs.PrintIdle()
 
-	statusbar := component.NewStatusbar(rows, cols, &buf)
-	buf.Write(component.Print(statusbar))
-	buf.Write(statusbar.Set("Welcome to the Terminal Algorithm Visualizer"))
+	statusbar := component.NewStatusbar(instrCh, rows, cols, &buf)
+	statusbar.PrintIdle()
+	statusbar.Set("Welcome to the Terminal Algorithm Visualizer")
 
 	nums := []int{1, 5, 8, 2, 11, 3, 12, 4, 9, 14, 13, 7, 15, 6, 10}
 	var visualizer component.Visualizer
-	visualizer = component.NewColumnGraph(nums)
+	visualizer = component.NewColumnGraph(instrCh, nums)
 	visualizer.At(11, 32)
-	buf.Write(component.Print(visualizer))
+	visualizer.PrintIdle()
 
-	speedBox := component.NewBox(fmt.Sprintf("%d ms", START_UPDATE_TIME.Milliseconds())).
+	speedBox := component.NewBox(instrCh, fmt.Sprintf("%d ms", START_UPDATE_TIME.Milliseconds())).
 		WithRoundedCorners().WithTitle("Speed").At(20, 85)
 
 	var legendBox *component.Box
@@ -122,56 +118,56 @@ func main() {
 		case 'q':
 			// for final version do something here
 
-			// buf.Write(statusbar.Set(component.Info("Goodbye")))
+			// statusbar.Set(component.Info("Goodbye"))
 			// <-time.After(time.Millisecond * 500)
 			return
 
 		case 'j':
-			buf.Write(algoList.Next())
+			algoList.Next()
 			if graphState != notStarted {
 				break
 			}
 
 			var newVisualizer component.Visualizer
 			if component.ToAlgoName(algoList.SelectedValue()) == component.Heap {
-				newVisualizer = component.NewTree(nums)
+				newVisualizer = component.NewTree(instrCh, nums)
 			} else {
-				newVisualizer = component.NewColumnGraph(nums)
+				newVisualizer = component.NewColumnGraph(instrCh, nums)
 			}
 
 			if reflect.TypeOf(newVisualizer) == reflect.TypeOf(visualizer) {
 				break
 			}
 
-			buf.Write(component.Clear(visualizer))
+			component.Clear(visualizer)
 			visualizer = newVisualizer
 			visualizer.At(11, 32)
-			buf.Write(component.Print(visualizer))
+			component.Print(visualizer)
 
 		case 'k':
-			buf.Write(algoList.Prev())
+			algoList.Prev()
 			if graphState != notStarted {
 				break
 			}
 
 			var newVisualizer component.Visualizer
 			if component.ToAlgoName(algoList.SelectedValue()) == component.Heap {
-				newVisualizer = component.NewTree(nums)
+				newVisualizer = component.NewTree(instrCh, nums)
 			} else {
-				newVisualizer = component.NewColumnGraph(nums)
+				newVisualizer = component.NewColumnGraph(instrCh, nums)
 			}
 
 			if reflect.TypeOf(newVisualizer) == reflect.TypeOf(visualizer) {
 				break
 			}
 
-			buf.Write(component.Clear(visualizer))
+			component.Clear(visualizer)
 			visualizer = newVisualizer
 			visualizer.At(11, 32)
-			buf.Write(component.Print(visualizer))
+			component.Print(visualizer)
 
 		case term_utils.Tab:
-			buf.Write(categoryTabs.Next())
+			categoryTabs.Next()
 			statusbar.After(component.Info("There is nothing implemented yet"), time.Second*3)
 
 		case term_utils.Enter:
@@ -195,9 +191,9 @@ func main() {
 			statusbar.After(fmt.Sprintf("%s: Started", selected), time.Second*3)
 			visualizer.Init(algo)
 
-			buf.Write(component.Print(speedBox))
-			legendBox = component.NewBox(algo.Legend...).WithRoundedCorners().WithTitle("Legend").At(13, 82)
-			buf.Write(component.Print(legendBox))
+			speedBox.PrintIdle()
+			legendBox = component.NewBox(instrCh, algo.Legend...).WithRoundedCorners().WithTitle("Legend").At(13, 82)
+			legendBox.PrintIdle()
 
 			graphState = running
 			go handleGraph(&buf, controlCh, visualizer, speedBox)
@@ -212,8 +208,7 @@ func main() {
 				graphState = running
 				controlCh <- running
 			} else {
-				buf.Write(statusbar.Set(fmt.Sprintf(
-					"%s: Paused - Press [ space ] to continue", selected)))
+				statusbar.Set(fmt.Sprintf("%s: Paused - Press [ space ] to continue", selected))
 				graphState = paused
 				controlCh <- paused
 			}
@@ -227,7 +222,7 @@ func main() {
 			graphState = notStarted
 			statusbar.After(fmt.Sprintf("%s: Stopped", selected), time.Second*3)
 
-			buf.Write(component.Clear(legendBox))
+			component.Clear(legendBox)
 		case 'n':
 			if graphState == notStarted {
 				break
@@ -280,32 +275,32 @@ func handleGraph(
 		case state = <-controlCh:
 			switch state {
 			case stop:
-				buf.Write(component.Update(visualizer))
-				buf.Write(component.Clear(speedBox))
+				component.Update(visualizer)
+				component.Clear(speedBox)
 				return
 			case next:
 				state = paused
-				buf.Write(visualizer.Next())
+				visualizer.Next()
 			case prev:
 				state = paused
-				buf.Write(visualizer.Prev())
+				visualizer.Prev()
 			case reset:
 			case faster:
 				if waitTime-time.Millisecond*50 >= MIN_UPDATE_TIME {
 					waitTime -= time.Millisecond * 50
-					buf.Write(speedBox.Update(int(waitTime.Milliseconds())))
+					speedBox.Update(int(waitTime.Milliseconds()))
 				}
 			case slower:
 				if waitTime+time.Millisecond*50 <= MAX_UPDATE_TIME {
 					waitTime += time.Millisecond * 50
-					buf.Write(speedBox.Update(int(waitTime.Milliseconds())))
+					speedBox.Update(int(waitTime.Milliseconds()))
 				}
 			}
 		default:
 			if state == paused {
 				break
 			}
-			buf.Write(visualizer.Next())
+			visualizer.Next()
 			time.Sleep(waitTime)
 		}
 	}

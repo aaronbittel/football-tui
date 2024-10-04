@@ -9,25 +9,33 @@ import (
 )
 
 type Statusbar struct {
-	rows    int
-	cols    int
+	instrCh chan<- string
+
+	rows int
+	cols int
+
 	message string
 	buf     *Buf
 
 	mutex *sync.Mutex
 }
 
-func NewStatusbar(rows, cols int, buf *Buf) *Statusbar {
+func NewStatusbar(instrCh chan<- string, rows, cols int, buf *Buf) *Statusbar {
 	return &Statusbar{
-		buf:   buf,
-		rows:  rows,
-		cols:  cols,
-		mutex: &sync.Mutex{},
+		instrCh: instrCh,
+		buf:     buf,
+		rows:    rows,
+		cols:    cols,
+		mutex:   &sync.Mutex{},
 	}
 }
 
 func (s Statusbar) Pos() (row, col int) {
 	return s.rows - 1, 1
+}
+
+func (s *Statusbar) PrintIdle() {
+	s.instrCh <- Print(s)
 }
 
 func (s Statusbar) String() string {
@@ -39,13 +47,13 @@ func (s Statusbar) String() string {
 	return b.String()
 }
 
-func (s *Statusbar) Set(updated string) string {
+func (s *Statusbar) Set(updated string) {
 	var b strings.Builder
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if s.message == updated {
-		return ""
+		return
 	}
 
 	b.WriteString(term_utils.MoveCur(s.rows, 1))
@@ -56,15 +64,14 @@ func (s *Statusbar) Set(updated string) string {
 	}
 	s.message = updated
 
-	return b.String()
+	s.instrCh <- b.String()
 }
 
 func (s *Statusbar) After(updated string, duration time.Duration) {
-	//TODO: Cant return string from goroutine -> channel?
 	go func() {
-		s.buf.Write(s.Set(updated))
+		s.Set(updated)
 		<-time.After(duration)
-		s.buf.Write(term_utils.ClearLineInst(s.rows, 1))
+		s.instrCh <- term_utils.ClearLineInst(s.rows, 1)
 	}()
 }
 
