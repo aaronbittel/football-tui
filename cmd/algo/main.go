@@ -32,7 +32,7 @@ var debug = term_utils.GetDebugFunc()
 const (
 	MIN_UPDATE_TIME   = time.Millisecond * 100
 	MAX_UPDATE_TIME   = time.Millisecond * 950
-	START_UPDATE_TIME = time.Millisecond * 500
+	START_UPDATE_TIME = time.Millisecond * 950
 )
 
 func main() {
@@ -50,7 +50,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	instrCh := make(chan string)
+	//TODO: does this make a     v     difference?
+	instrCh := make(chan string, 5)
+	defer close(instrCh)
+
 	buf := component.NewBuf(instrCh)
 	go buf.ReadLoop()
 	go buf.FlushLoop()
@@ -60,17 +63,11 @@ func main() {
 		WithRoundedCorners().
 		WithPadding(1, 3).
 		At(2, 34)
-	titleBox.PrintIdle()
+	component.Print(titleBox)
 
-	algoList := component.NewList(
-		instrCh,
-		"Bubble sort",
-		"Selection sort",
-		"Insertion sort",
-		"Quick sort",
-		"Merge sort",
-		"Heap sort").At(12, 5)
-	algoList.PrintIdle()
+	algoLists := createAlgoLists()
+	algoList := component.NewList(instrCh, algoLists[0]...).At(12, 5)
+	component.Print(algoList)
 
 	controlBoxContent := createControlBoxContent()
 	controlBox := component.NewBox(instrCh, controlBoxContent...).
@@ -78,31 +75,30 @@ func main() {
 		WithColoredBorder(term_utils.Lightgray).
 		WithRoundedCorners().
 		At(30, 23)
-	controlBox.PrintIdle()
+	component.Print(controlBox)
 
 	categoryTabs := component.NewTabs(instrCh, "Sorting", "Searching", "Graphs").At(7, 36)
-	categoryTabs.PrintIdle()
+	component.Print(categoryTabs)
 
 	statusbar := component.NewStatusbar(instrCh, rows, cols, &buf)
-	statusbar.PrintIdle()
+	component.Print(statusbar)
 	statusbar.Set("Welcome to the Terminal Algorithm Visualizer")
 
 	nums := []int{1, 5, 8, 2, 11, 3, 12, 4, 9, 14, 13, 7, 15, 6, 10}
+
 	var visualizer component.Visualizer
 	visualizer = component.NewColumnGraph(instrCh, nums)
 	visualizer.At(11, 32)
-	visualizer.PrintIdle()
+	component.Print(visualizer)
 
-	speedBox := component.NewBox(instrCh, fmt.Sprintf("%d ms", START_UPDATE_TIME.Milliseconds())).
-		WithRoundedCorners().WithTitle("Speed").At(20, 85)
-
+	var speedBox *component.Box
 	var legendBox *component.Box
+	var algo component.Algorithm
 
 	controlCh := make(chan State)
 	defer close(controlCh)
 
 	graphState := notStarted
-	selected := ""
 
 	reader := bufio.NewReader(os.Stdin)
 	active := true
@@ -129,7 +125,17 @@ func main() {
 			}
 
 			var newVisualizer component.Visualizer
-			if component.ToAlgoName(algoList.SelectedValue()) == component.Heap {
+
+			switch categoryTabs.GetSelected() {
+			case "Sorting":
+				algo, err = component.GetSortAlgoByName(algoList.SelectedValue())
+			case "Searching":
+				algo, err = component.GetSearchAlgoByName(algoList.SelectedValue(), 10)
+			case "Graphs":
+				err = component.NotImplementedErr
+			}
+
+			if algo == component.HeapSort {
 				newVisualizer = component.NewTree(instrCh, nums)
 			} else {
 				newVisualizer = component.NewColumnGraph(instrCh, nums)
@@ -151,7 +157,17 @@ func main() {
 			}
 
 			var newVisualizer component.Visualizer
-			if component.ToAlgoName(algoList.SelectedValue()) == component.Heap {
+
+			switch categoryTabs.GetSelected() {
+			case "Sorting":
+				algo, err = component.GetSortAlgoByName(algoList.SelectedValue())
+			case "Searching":
+				algo, err = component.GetSearchAlgoByName(algoList.SelectedValue(), 10)
+			case "Graphs":
+				err = component.NotImplementedErr
+			}
+
+			if algo == component.HeapSort {
 				newVisualizer = component.NewTree(instrCh, nums)
 			} else {
 				newVisualizer = component.NewColumnGraph(instrCh, nums)
@@ -168,7 +184,15 @@ func main() {
 
 		case term_utils.Tab:
 			categoryTabs.Next()
-			statusbar.After(component.Info("There is nothing implemented yet"), time.Second*3)
+
+			if categoryTabs.Selected >= len(algoLists) {
+				statusbar.After(component.Info("There is nothing implemented yet"), time.Second*3)
+				break
+			}
+
+			component.Clear(algoList)
+			algoList = component.NewList(instrCh, algoLists[categoryTabs.Selected]...).At(12, 5)
+			component.Print(algoList)
 
 		case term_utils.Enter:
 			if graphState != notStarted {
@@ -178,37 +202,50 @@ func main() {
 				break
 			}
 
-			selected = algoList.SelectedValue()
-			algoName := component.ToAlgoName(selected)
-			if algoName == component.NotImplemented {
+			switch categoryTabs.GetSelected() {
+			case "Sorting":
+				algo, err = component.GetSortAlgoByName(algoList.SelectedValue())
+			case "Searching":
+				algo, err = component.GetSearchAlgoByName(algoList.SelectedValue(), 13)
+			case "Graphs":
+				err = component.NotImplementedErr
+			}
+
+			if err != nil {
 				statusbar.After(component.Info(
 					"This algorithm is not implemented yet, sadge"),
 					time.Second*3)
 				break
 			}
 
-			algo := component.NewAlgorithm(algoName)
-			statusbar.After(fmt.Sprintf("%s: Started", selected), time.Second*3)
+			statusbar.After(fmt.Sprintf("%s: Started", algo.String()), time.Second*3)
 			visualizer.Init(algo)
 
-			speedBox.PrintIdle()
-			legendBox = component.NewBox(instrCh, algo.Legend...).WithRoundedCorners().WithTitle("Legend").At(13, 82)
-			legendBox.PrintIdle()
+			speedBox = component.NewBox(
+				instrCh, fmt.Sprintf("%d ms", START_UPDATE_TIME.Milliseconds())).
+				WithRoundedCorners().
+				WithTitle("Speed").At(20, 85)
+			component.Print(speedBox)
+
+			legendBox = component.NewBox(instrCh, algo.Legend()...).
+				WithRoundedCorners().
+				WithTitle("Legend").
+				At(14, 82)
+			component.Print(legendBox)
 
 			graphState = running
-			go handleGraph(&buf, controlCh, visualizer, speedBox)
-
+			go handleGraph(controlCh, visualizer, speedBox)
 		case term_utils.Space:
 			if graphState == notStarted {
 				break
 			}
 
 			if graphState == paused {
-				statusbar.After(fmt.Sprintf("%s: Resumed", selected), time.Second*3)
+				statusbar.After(fmt.Sprintf("%s: Resumed", algo.String()), time.Second*3)
 				graphState = running
 				controlCh <- running
 			} else {
-				statusbar.Set(fmt.Sprintf("%s: Paused - Press [ space ] to continue", selected))
+				statusbar.Set(fmt.Sprintf("%s: Paused - Press [ space ] to continue", algo.String()))
 				graphState = paused
 				controlCh <- paused
 			}
@@ -220,9 +257,9 @@ func main() {
 
 			controlCh <- stop
 			graphState = notStarted
-			statusbar.After(fmt.Sprintf("%s: Stopped", selected), time.Second*3)
-
+			statusbar.After(fmt.Sprintf("%s: Stopped", algo.String()), time.Second*3)
 			component.Clear(legendBox)
+
 		case 'n':
 			if graphState == notStarted {
 				break
@@ -245,7 +282,7 @@ func main() {
 			}
 
 			controlCh <- faster
-			statusbar.After(fmt.Sprintf("%s: Faster", selected), time.Second)
+			statusbar.After(fmt.Sprintf("%s: Faster", algo.String()), time.Second)
 
 		case 's':
 			if graphState == notStarted {
@@ -253,7 +290,7 @@ func main() {
 			}
 
 			controlCh <- slower
-			statusbar.After(fmt.Sprintf("%s: Slower", selected), time.Second)
+			statusbar.After(fmt.Sprintf("%s: Slower", algo.String()), time.Second)
 		}
 
 		<-time.After(time.Millisecond * 50)
@@ -263,7 +300,6 @@ func main() {
 }
 
 func handleGraph(
-	buf *component.Buf,
 	controlCh <-chan State,
 	visualizer component.Visualizer,
 	speedBox *component.Box,
@@ -330,4 +366,13 @@ func createControlBoxContent() []string {
 			term_utils.Colorize(desc, term_utils.Lightgray))
 	}
 	return content
+}
+
+func createAlgoLists() [][]string {
+	return [][]string{
+		{"Bubble sort", "Selection sort", "Insertion sort", "Quick sort",
+			"Merge sort", "Heap sort"},
+		{"Linear search", "Binary search", "Jump search"},
+		{"Breadth First", "Depth First"},
+	}
 }

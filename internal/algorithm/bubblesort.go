@@ -16,13 +16,14 @@ func Bubblesort(columnCh chan<- ColumnGraphData, nums []int) {
 		for j := 0; j < i; j++ {
 			colors[j] = term_utils.Green
 			colors[j+1] = term_utils.Blue
+
 			columnCh <- NewColumnGraphData(
 				slices.Clone(nums),
 				maps.Clone(colors),
 				fmt.Sprintf("Comparing %s to %s",
 					term_utils.Colorize(nums[j], term_utils.Green),
-					term_utils.Colorize(nums[j+1], term_utils.Blue)),
-			)
+					term_utils.Colorize(nums[j+1], term_utils.Blue)))
+
 			if nums[j] > nums[j+1] {
 				nums[j], nums[j+1] = nums[j+1], nums[j]
 				colors[j] = term_utils.Blue
