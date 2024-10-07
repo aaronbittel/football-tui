@@ -32,8 +32,8 @@ func NewTabs(instrCh chan<- string, headers ...string) *Tabs {
 	return tabs
 }
 
-func (t *Tabs) PrintIdle() {
-	t.instrCh <- Print(t)
+func (t Tabs) Chan() chan<- string {
+	return t.instrCh
 }
 
 func (t Tabs) String() string {

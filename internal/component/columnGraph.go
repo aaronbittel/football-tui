@@ -27,8 +27,6 @@ type ColumnGraph struct {
 
 	algo *Algorithm
 
-	legendBox *Box
-
 	colParams columnParams
 }
 
@@ -49,8 +47,13 @@ func NewColumnGraph(instrCh chan<- string, nums []int) *ColumnGraph {
 	}
 }
 
-func (cgf *ColumnGraph) PrintIdle() {
-	cgf.instrCh <- Print(cgf)
+type columnParams struct {
+	maxVal int
+	spaces int
+}
+
+func (cgf ColumnGraph) Chan() chan<- string {
+	return cgf.instrCh
 }
 
 func (cgf *ColumnGraph) String() string {
@@ -86,32 +89,25 @@ func (cgf ColumnGraph) Nums() []int {
 	return slices.Clone(cgf.originalNums)
 }
 
-func (cgf *ColumnGraph) Init(algo *Algorithm) {
+func (cgf *ColumnGraph) Init(algo Algorithm) {
+	cgf.frames = make([]algorithm.ColumnGraphData, 0, 300)
 	columnCh := make(chan algorithm.ColumnGraphData)
 
-	go algo.AlgorithmFn(columnCh, slices.Clone(cgf.originalNums))
-
-	// Resetting from previous visualization
-	cgf.frames = make([]algorithm.ColumnGraphData, 0, 100)
-	cgf.cursor = 0
-
 	// append "empty" frame because partialUpdate always compares prev with next
+	//HACK: the first one gets skipped somehow, so add empty
 	cgf.frames = append(
 		cgf.frames,
-		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{}, ""),
-	)
+		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{}, ""))
 
 	// this is always the first frame of the visualization
-	algoName := algo.Name.String()
+	algoName := algo.String()
 	cgf.frames = append(
 		cgf.frames,
 		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{},
-			fmt.Sprintf("Starting %s visualization", algoName)),
-	)
+			fmt.Sprintf("Starting %s visualization", algoName)))
 
-	for col := range columnCh {
-		cgf.frames = append(cgf.frames, col)
-	}
+	cgf.frames = append(cgf.frames, algo.GetFrames(columnCh, slices.Clone(cgf.originalNums))...)
+	cgf.cursor = 0
 
 	sortedNums := slices.Clone(cgf.originalNums)
 	slices.Sort(sortedNums)
@@ -122,13 +118,9 @@ func (cgf *ColumnGraph) Init(algo *Algorithm) {
 		algorithm.NewColumnGraphData(sortedNums, map[int]string{},
 			fmt.Sprintf(term_utils.Colorize(
 				fmt.Sprintf("Finished %s visualization", algoName),
-				term_utils.BoldGreen,
-			))),
-	)
+				term_utils.BoldGreen))))
 
-	cgf.algo = algo
-	cgf.legendBox = cgf.createLegend(cgf.algo.Legend)
-	Print(cgf.legendBox)
+	cgf.frames = slices.Clip(cgf.frames)
 }
 
 func (cgf ColumnGraph) createLegend(legend []string) *Box {
@@ -269,7 +261,7 @@ func (cgf *ColumnGraph) clearDescription() string {
 func (cgf *ColumnGraph) Reset() {
 	clearGraphInst := cgf.clearGraph()
 	clearDescInst := cgf.clearDescription()
-	printGraphIdleInst := Print(cgf)
+	printGraphIdleInst := cgf.String()
 	cgf.instrCh <- clearGraphInst + clearDescInst + printGraphIdleInst
 }
 

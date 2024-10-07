@@ -16,7 +16,7 @@ type Tree struct {
 	col int
 
 	algo   *Algorithm
-	Frames []algorithm.ColumnGraphData
+	frames []algorithm.ColumnGraphData
 	Cursor int
 
 	nums  []int
@@ -36,35 +36,24 @@ func NewTree(instrCh chan<- string, nums []int) *Tree {
 		instrCh: instrCh,
 		nums:    nums,
 		level:   level,
-		Frames:  frames,
+		frames:  frames,
 		row:     1,
 		col:     1,
 	}
 }
 
 func (t *Tree) AddFrame(next algorithm.ColumnGraphData) {
-	prev := t.Frames[t.Cursor]
-	t.Frames = append(t.Frames, next)
+	prev := t.frames[t.Cursor]
+	t.frames = append(t.frames, next)
 	t.Cursor++
 	t.PartialUpdate(prev, next)
 }
 
-func (t *Tree) Init(algo *Algorithm) {
+func (t *Tree) Init(algo Algorithm) {
 	columnCh := make(chan algorithm.ColumnGraphData)
-
-	go algo.AlgorithmFn(columnCh, slices.Clone(t.nums))
-
-	// Resetting from previous visualization
-	t.Frames = make([]algorithm.ColumnGraphData, 0, 100)
+	t.frames = algo.GetFrames(columnCh, slices.Clone(t.nums))
 	t.Cursor = 0
-	for col := range columnCh {
-		t.Frames = append(t.Frames, col)
-	}
-
-	t.algo = algo
-
-	// t.legendBox = t.createLegend(t.algo.legend)
-	// Print(t.legendBox)
+	t.frames = slices.Clip(t.frames)
 }
 
 //            ╭───╮               ╭───╮         ╭────╮
@@ -132,11 +121,11 @@ func (t Tree) Pos() (row, col int) {
 }
 
 func (t *Tree) Next() {
-	if t.Cursor+1 >= len(t.Frames) {
+	if t.Cursor+1 >= len(t.frames) {
 		return
 	}
 
-	updateInstructions := t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor+1])
+	updateInstructions := t.PartialUpdate(t.frames[t.Cursor], t.frames[t.Cursor+1])
 	t.Cursor++
 	t.instrCh <- updateInstructions
 }
@@ -146,7 +135,7 @@ func (t *Tree) Prev() {
 		return
 	}
 
-	updateInst := t.PartialUpdate(t.Frames[t.Cursor], t.Frames[t.Cursor-1])
+	updateInst := t.PartialUpdate(t.frames[t.Cursor], t.frames[t.Cursor-1])
 	t.Cursor--
 	t.instrCh <- updateInst
 }
@@ -163,8 +152,8 @@ func (t *Tree) At(row, col int) {
 	t.col = col
 }
 
-func (t *Tree) PrintIdle() {
-	t.instrCh <- Print(t)
+func (t Tree) Chan() chan<- string {
+	return t.instrCh
 }
 
 func (t Tree) String() string {

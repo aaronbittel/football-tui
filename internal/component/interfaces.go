@@ -6,12 +6,19 @@ import (
 	term_utils "tui/internal/term-utils"
 )
 
+// FIX: ? Feels weird
+type Instructor interface {
+	Chan() chan<- string
+}
+
 type Printer interface {
+	Instructor
 	fmt.Stringer
 	Pos() (row, col int)
 }
 
 type Clearer interface {
+	Instructor
 	Pos() (row, col int)
 	Size() (rows, cols int)
 }
@@ -21,7 +28,8 @@ type Updater interface {
 	Clearer
 }
 
-func Clear(c Clearer) string {
+// FIX: ? Feels weird
+func Clear(c Clearer) {
 	var b strings.Builder
 	rows, cols := c.Size()
 	row, col := c.Pos()
@@ -29,19 +37,21 @@ func Clear(c Clearer) string {
 		b.WriteString(term_utils.MoveCur(row+i, col))
 		b.WriteString(strings.Repeat(" ", cols))
 	}
-	return b.String()
+	c.Chan() <- b.String()
 }
 
-func Print(s Printer) string {
+// FIX: ? Feels weird
+func Print(s Printer) {
 	var b strings.Builder
 	row, col := s.Pos()
 	for i, line := range strings.Split(s.String(), "\n") {
 		b.WriteString(term_utils.MoveCur(row+i, col))
 		b.WriteString(line)
 	}
-	return b.String()
+	s.Chan() <- b.String()
 }
 
-func Update(u Updater) string {
-	return Clear(u) + Print(u)
+func Update(u Updater) {
+	Clear(u)
+	Print(u)
 }

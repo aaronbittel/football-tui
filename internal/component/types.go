@@ -1,144 +1,188 @@
 package component
 
 import (
+	"errors"
+	"fmt"
 	"tui/internal/algorithm"
 	term_utils "tui/internal/term-utils"
 )
 
+type Algorithm interface {
+	GetFrames(columnCh chan algorithm.ColumnGraphData, nums []int) []algorithm.ColumnGraphData
+	fmt.Stringer
+	Legend() []string
+}
+
 type Visualizer interface {
-	PrintIdle()
 	Next()
 	Prev()
-	Init(algo *Algorithm)
+	Init(Algorithm)
 	At(row, col int)
 	Printer
 	Clearer
 }
 
-type AlgorithmFn func(chan<- algorithm.ColumnGraphData, []int)
+var (
+	BubbleSort    = NewSortAlgorithm("Bubble sort", algorithm.Bubblesort, bubbleLegend)
+	InsertionSort = NewSortAlgorithm("Insertion sort", algorithm.Insertionsort, insertionLegend)
+	SelectionSort = NewSortAlgorithm("Selection sort", algorithm.Selectionsort, selectionLegend)
+	QuickSort     = NewSortAlgorithm("Quick sort", algorithm.Quicksort, quickLegend)
+	MergeSort     = NewSortAlgorithm("Merge sort", algorithm.Mergesort, mergeLegend)
+	HeapSort      = NewSortAlgorithm("Heap sort", algorithm.Heapsort, heapLegend)
 
-type AlgoName int
+	LinearSearch = createSearchAlgorithm("Linear search", algorithm.LinearSearch, linearLegend)
+	BinarySearch = createSearchAlgorithm("Binary search", algorithm.BinarySearch, binaryLegend)
+	JumpSearch   = createSearchAlgorithm("Jump search", algorithm.JumpSearch, jumpLegend)
 
-func (a AlgoName) String() string {
-	switch a {
-	case Bubble:
-		return "Bubblesort"
-	case Selection:
-		return "Selectionsort"
-	case Insertion:
-		return "Insertionsort"
-	case Quick:
-		return "Quicksort"
-	case Merge:
-		return "Mergesort"
-	case Heap:
-		return "Heapsort"
-	default:
-		panic("not implemented")
-	}
-}
-
-const (
-	Bubble AlgoName = iota
-	Selection
-	Insertion
-	Quick
-	Merge
-	Heap
-	NotImplemented
+	NotImplementedErr = errors.New("This algorithm is not yet implemented")
 )
 
-type Algorithm struct {
-	Name        AlgoName
-	AlgorithmFn AlgorithmFn
-	Legend      []string
-}
-
-func NewAlgorithm(name AlgoName) *Algorithm {
-	var (
-		algo   AlgorithmFn
-		legend []string
-	)
-
+// FIX: Do I need the err?
+func GetSortAlgoByName(name string) (Algorithm, error) {
 	switch name {
-	case Bubble:
-		algo = algorithm.Bubblesort
-		legend = BubbleLegend
-	case Selection:
-		algo = algorithm.Selectionsort
-		legend = SelectionLegend
-	case Insertion:
-		algo = algorithm.Insertionsort
-		legend = InsertionLegend
-	case Quick:
-		algo = algorithm.Quicksort
-		legend = QuickLegend
-	case Merge:
-		algo = algorithm.Mergesort
-		legend = MergeLegend
-	case Heap:
-		algo = algorithm.Heapsort
-		legend = HeapLegend
-	}
-
-	return &Algorithm{
-		Name:        name,
-		AlgorithmFn: algo,
-		Legend:      legend,
-	}
-}
-
-type columnParams struct {
-	maxVal int
-	spaces int
-}
-
-func ToAlgoName(s string) AlgoName {
-	switch s {
 	case "Bubble sort":
-		return Bubble
-	case "Selection sort":
-		return Selection
+		return BubbleSort, nil
 	case "Insertion sort":
-		return Insertion
+		return InsertionSort, nil
+	case "Selection sort":
+		return SelectionSort, nil
 	case "Quick sort":
-		return Quick
+		return QuickSort, nil
 	case "Merge sort":
-		return Merge
+		return MergeSort, nil
 	case "Heap sort":
-		return Heap
+		return HeapSort, nil
 	default:
-		return NotImplemented
+		return nil, NotImplementedErr
 	}
 }
+
+func GetSearchAlgoByName(name string, target int) (Algorithm, error) {
+	switch name {
+	case "Linear search":
+		return NewSearchAlgorithm(LinearSearch, target), nil
+	case "Binary search":
+		return NewSearchAlgorithm(BinarySearch, target), nil
+	case "Jump search":
+		return NewSearchAlgorithm(JumpSearch, target), nil
+	default:
+		return nil, NotImplementedErr
+	}
+}
+
+type SortAlgorithm struct {
+	name     string
+	sortFunc SortFunc
+	legend   []string
+}
+
+func NewSortAlgorithm(name string, fn SortFunc, legend []string) *SortAlgorithm {
+	return &SortAlgorithm{
+		name:     name,
+		sortFunc: fn,
+		legend:   legend,
+	}
+}
+
+func (sa SortAlgorithm) Legend() []string {
+	return sa.legend
+}
+
+func (sa SortAlgorithm) String() string {
+	return sa.name
+}
+
+func (sa SortAlgorithm) GetFrames(columnCh chan algorithm.ColumnGraphData, nums []int) []algorithm.ColumnGraphData {
+
+	go sa.sortFunc(columnCh, nums)
+	frames := make([]algorithm.ColumnGraphData, 0, 300)
+	for col := range columnCh {
+		frames = append(frames, col)
+	}
+	return frames
+}
+
+type SearchAlgorithm struct {
+	name     string
+	sortFunc SearchFunc
+	target   int
+	legend   []string
+}
+
+func NewSearchAlgorithm(sa *SearchAlgorithm, target int) *SearchAlgorithm {
+	sa.SetTarget(target)
+	return sa
+}
+
+func createSearchAlgorithm(name string, fn SearchFunc, legend []string) *SearchAlgorithm {
+	return &SearchAlgorithm{
+		name:     name,
+		sortFunc: fn,
+		legend:   legend,
+	}
+}
+
+func (sa SearchAlgorithm) Legend() []string {
+	return sa.legend
+}
+
+func (sa *SearchAlgorithm) SetTarget(target int) {
+	sa.target = target
+}
+
+func (sa SearchAlgorithm) String() string {
+	return sa.name
+}
+
+func (sa SearchAlgorithm) GetFrames(columnCh chan algorithm.ColumnGraphData, nums []int) []algorithm.ColumnGraphData {
+
+	go sa.sortFunc(columnCh, nums, sa.target)
+	frames := make([]algorithm.ColumnGraphData, 0, 300)
+	for col := range columnCh {
+		frames = append(frames, col)
+	}
+
+	return frames
+}
+
+type SortFunc func(columnCh chan<- algorithm.ColumnGraphData, nums []int)
+type SearchFunc func(columnCh chan<- algorithm.ColumnGraphData, nums []int, target int)
 
 var (
-	BubbleLegend = []string{
+	bubbleLegend = []string{
 		term_utils.Colorize("▣  Current", term_utils.Green),
 		term_utils.Colorize("▣  Compare", term_utils.Blue),
-		term_utils.Colorize("▣  Locked", term_utils.Orange),
-	}
-	SelectionLegend = []string{
+		term_utils.Colorize("▣  Locked", term_utils.Orange)}
+
+	selectionLegend = []string{
 		term_utils.Colorize("▣  Lowest", term_utils.Green),
 		term_utils.Colorize("▣  Compare", term_utils.Blue),
-		term_utils.Colorize("▣  Locked", term_utils.Orange),
-	}
-	QuickLegend = []string{
+		term_utils.Colorize("▣  Locked", term_utils.Orange)}
+
+	quickLegend = []string{
 		term_utils.Colorize("▣  Current", term_utils.Green),
 		term_utils.Colorize("▣  Compare", term_utils.Blue),
 		term_utils.Colorize("▣  Locked", term_utils.Orange),
-		term_utils.Colorize("▣  !interesting", term_utils.Lightgray),
-	}
-	InsertionLegend = []string{
+		term_utils.Colorize("▣  !interesting", term_utils.Lightgray)}
+
+	insertionLegend = []string{
 		term_utils.Colorize("▣  Current Value", term_utils.Green),
-		term_utils.Colorize("▣  Current Array", term_utils.Lightgray),
-	}
-	MergeLegend = []string{
+		term_utils.Colorize("▣  Current Array", term_utils.Lightgray)}
+
+	mergeLegend = []string{
 		term_utils.Colorize("▣  Left side", term_utils.Green),
 		term_utils.Colorize("▣  Right side", term_utils.Blue),
-		term_utils.Colorize("▣  !interesting", term_utils.Lightgray),
-	}
-	HeapLegend = []string{
-		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed),
-	}
+		term_utils.Colorize("▣  !interesting", term_utils.Lightgray)}
+
+	heapLegend = []string{
+		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed)}
+
+	linearLegend = []string{
+		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed)}
+
+	binaryLegend = []string{
+		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed)}
+
+	jumpLegend = []string{
+		term_utils.Colorize("▣  Implement Me", term_utils.BoldRed)}
 )

@@ -34,8 +34,8 @@ func (s Statusbar) Pos() (row, col int) {
 	return s.rows - 1, 1
 }
 
-func (s *Statusbar) PrintIdle() {
-	s.instrCh <- Print(s)
+func (s Statusbar) Chan() chan<- string {
+	return s.instrCh
 }
 
 func (s Statusbar) String() string {
@@ -71,7 +71,10 @@ func (s *Statusbar) After(updated string, duration time.Duration) {
 	go func() {
 		s.Set(updated)
 		<-time.After(duration)
-		s.instrCh <- term_utils.ClearLineInst(s.rows, 1)
+		// if status was updated in the meantime dont delete the content
+		if s.message == updated {
+			s.instrCh <- term_utils.ClearLineInst(s.rows, 1)
+		}
 	}()
 }
 

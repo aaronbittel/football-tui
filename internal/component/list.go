@@ -1,6 +1,7 @@
 package component
 
 import (
+	"slices"
 	"strings"
 	term_utils "tui/internal/term-utils"
 	"unicode/utf8"
@@ -31,8 +32,16 @@ func NewList(instrCh chan<- string, items ...string) *List {
 	}
 }
 
-func (l *List) PrintIdle() {
-	l.instrCh <- Print(l)
+func (l List) Size() (rows, cols int) {
+	rows = len(l.items)
+	maxLen := len(slices.MaxFunc(l.items, func(a, b string) int {
+		return len(a) - len(b)
+	}))
+	return rows + l.padding.top + l.padding.bottom, maxLen + l.padding.right + l.padding.left
+}
+
+func (l List) Chan() chan<- string {
+	return l.instrCh
 }
 
 func (l *List) String() string {

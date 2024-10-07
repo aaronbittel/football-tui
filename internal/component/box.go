@@ -33,8 +33,8 @@ func NewBox(instrCh chan<- string, messages ...string) *Box {
 	}
 }
 
-func (b *Box) PrintIdle() {
-	b.instrCh <- Print(b)
+func (b Box) Chan() chan<- string {
+	return b.instrCh
 }
 
 func (b *Box) String() string {
