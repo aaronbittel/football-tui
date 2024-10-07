@@ -15,6 +15,12 @@
     - [ ] Coloring and Updating needs more work, sometimes there remain relics
       from previous state
 
+- Search:
+    - [ ] Always show what is the target number (Box?)
+    - [ ] Don't show sorted array as last step -> show if target was found
+    (highlight) or was not found
+    - [ ] have different starting and ending columnGraphData for search and sort
+
 - [ ] make statusbar smarter when After() 3s and meanwhile set() then set() gets
         removed after tick
 - [ ] Layout adjustments based on window size
