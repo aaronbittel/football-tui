@@ -52,88 +52,88 @@ type columnParams struct {
 	spaces int
 }
 
-func (cgf ColumnGraph) Chan() chan<- string {
-	return cgf.instrCh
+func (cg ColumnGraph) Chan() chan<- string {
+	return cg.instrCh
 }
 
-func (cgf *ColumnGraph) String() string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) String() string {
+	defer cg.builder.Reset()
 
 	var char string
 
-	for row := cgf.colParams.maxVal; row >= 1; row-- {
-		for _, n := range cgf.originalNums {
+	for row := cg.colParams.maxVal; row >= 1; row-- {
+		for _, n := range cg.originalNums {
 			if n >= row {
 				char = term_utils.FullBlock
 			} else {
 				char = " "
 			}
-			cgf.builder.WriteString(char + strings.Repeat(" ", cgf.colParams.spaces))
+			cg.builder.WriteString(char + strings.Repeat(" ", cg.colParams.spaces))
 		}
-		cgf.builder.WriteString("\n")
+		cg.builder.WriteString("\n")
 	}
 
-	for _, n := range cgf.originalNums {
-		s := cgf.colParams.spaces - len(fmt.Sprint(n)) + 1
-		cgf.builder.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
+	for _, n := range cg.originalNums {
+		s := cg.colParams.spaces - len(fmt.Sprint(n)) + 1
+		cg.builder.WriteString(fmt.Sprintf("%d%s", n, strings.Repeat(" ", s)))
 	}
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf ColumnGraph) Pos() (row, col int) {
-	return cgf.row, cgf.col
+func (cg ColumnGraph) Pos() (row, col int) {
+	return cg.row, cg.col
 }
 
-func (cgf ColumnGraph) Nums() []int {
-	return slices.Clone(cgf.originalNums)
+func (cg ColumnGraph) Nums() []int {
+	return slices.Clone(cg.originalNums)
 }
 
-func (cgf *ColumnGraph) Init(algo Algorithm) {
-	cgf.frames = make([]algorithm.ColumnGraphData, 0, 300)
+func (cg *ColumnGraph) Init(algo Algorithm) {
+	cg.frames = make([]algorithm.ColumnGraphData, 0, 300)
 	columnCh := make(chan algorithm.ColumnGraphData)
 
 	// append "empty" frame because partialUpdate always compares prev with next
 	//HACK: the first one gets skipped somehow, so add empty
-	cgf.frames = append(
-		cgf.frames,
-		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{}, ""))
+	cg.frames = append(
+		cg.frames,
+		algorithm.NewColumnGraphData(cg.originalNums, map[int]string{}, ""))
 
 	// this is always the first frame of the visualization
 	algoName := algo.String()
-	cgf.frames = append(
-		cgf.frames,
-		algorithm.NewColumnGraphData(cgf.originalNums, map[int]string{},
+	cg.frames = append(
+		cg.frames,
+		algorithm.NewColumnGraphData(cg.originalNums, map[int]string{},
 			fmt.Sprintf("Starting %s visualization", algoName)))
 
-	cgf.frames = append(cgf.frames, algo.GetFrames(columnCh, slices.Clone(cgf.originalNums))...)
-	cgf.cursor = 0
+	cg.frames = append(cg.frames, algo.GetFrames(columnCh, slices.Clone(cg.originalNums))...)
+	cg.cursor = 0
 
-	sortedNums := slices.Clone(cgf.originalNums)
+	sortedNums := slices.Clone(cg.originalNums)
 	slices.Sort(sortedNums)
 
 	// this is always the last frame of the visualization
-	cgf.frames = append(
-		cgf.frames,
+	cg.frames = append(
+		cg.frames,
 		algorithm.NewColumnGraphData(sortedNums, map[int]string{},
 			fmt.Sprintf(term_utils.Colorize(
 				fmt.Sprintf("Finished %s visualization", algoName),
 				term_utils.BoldGreen))))
 
-	cgf.frames = slices.Clip(cgf.frames)
+	cg.frames = slices.Clip(cg.frames)
 }
 
-func (cgf ColumnGraph) createLegend(legend []string) *Box {
-	legendCol := cgf.col + cgf.width + 6
+func (cg ColumnGraph) createLegend(legend []string) *Box {
+	legendCol := cg.col + cg.width + 6
 
-	return NewBox(cgf.instrCh, legend...).
+	return NewBox(cg.instrCh, legend...).
 		WithRoundedCorners().
 		WithTitle("Legend").
-		At(cgf.row, legendCol)
+		At(cg.row, legendCol)
 }
 
-func (cgf ColumnGraph) partialUpdate(prev, next algorithm.ColumnGraphData) string {
-	defer cgf.builder.Reset()
+func (cg ColumnGraph) partialUpdate(prev, next algorithm.ColumnGraphData) string {
+	defer cg.builder.Reset()
 
 	for i := 0; i < len(prev.Nums()); i++ {
 		// Only update the columns that have changed
@@ -141,130 +141,130 @@ func (cgf ColumnGraph) partialUpdate(prev, next algorithm.ColumnGraphData) strin
 			continue
 		}
 
-		cgf.builder.WriteString(cgf.removeColumn(prev.Nums()[i], i))
-		cgf.builder.WriteString(cgf.printNewCol(next.Nums()[i], i, next.Colors()[i]))
+		cg.builder.WriteString(cg.removeColumn(prev.Nums()[i], i))
+		cg.builder.WriteString(cg.printNewCol(next.Nums()[i], i, next.Colors()[i]))
 	}
 
-	cgf.builder.WriteString(cgf.updateDescription(prev.Desc(), next.Desc()))
+	cg.builder.WriteString(cg.updateDescription(prev.Desc(), next.Desc()))
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) Next() {
-	if cgf.cursor+1 >= len(cgf.frames) {
+func (cg *ColumnGraph) Next() {
+	if cg.cursor+1 >= len(cg.frames) {
 		return
 	}
 
-	updateInst := cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor+1])
-	cgf.cursor++
-	cgf.instrCh <- updateInst
+	updateInst := cg.partialUpdate(cg.frames[cg.cursor], cg.frames[cg.cursor+1])
+	cg.cursor++
+	cg.instrCh <- updateInst
 }
 
-func (cgf ColumnGraph) Size() (rows, cols int) {
-	lines := strings.Split(cgf.String(), "\n")
+func (cg ColumnGraph) Size() (rows, cols int) {
+	lines := strings.Split(cg.String(), "\n")
 	// +2 for description
 	return len(lines) + 2, len(lines[0])
 }
 
-func (cgf *ColumnGraph) Prev() {
-	if cgf.cursor-1 < 0 {
+func (cg *ColumnGraph) Prev() {
+	if cg.cursor-1 < 0 {
 		return
 	}
 
-	cgf.instrCh <- cgf.partialUpdate(cgf.frames[cgf.cursor], cgf.frames[cgf.cursor-1])
-	cgf.cursor--
+	cg.instrCh <- cg.partialUpdate(cg.frames[cg.cursor], cg.frames[cg.cursor-1])
+	cg.cursor--
 }
 
-func (cgf *ColumnGraph) At(row, col int) {
-	cgf.row = row
-	cgf.col = col
+func (cg *ColumnGraph) At(row, col int) {
+	cg.row = row
+	cg.col = col
 }
 
-func (cgf ColumnGraph) moveCursorTopColumn(colHeight, colIdx int) string {
-	return term_utils.MoveCur(cgf.row+(cgf.height-colHeight-1), cgf.col+colIdx*(cgf.colParams.spaces+1))
+func (cg ColumnGraph) moveCursorTopColumn(colHeight, colIdx int) string {
+	return term_utils.MoveCur(cg.row+(cg.height-colHeight-1), cg.col+colIdx*(cg.colParams.spaces+1))
 }
 
-func (cgf *ColumnGraph) removeColumn(colHeight, colIdx int) string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) removeColumn(colHeight, colIdx int) string {
+	defer cg.builder.Reset()
 
-	// -1 because the number underneath the columns counts into the cgf.height
+	// -1 because the number underneath the columns counts into the cg.height
 
-	cgf.builder.WriteString(cgf.moveCursorTopColumn(colHeight, colIdx))
+	cg.builder.WriteString(cg.moveCursorTopColumn(colHeight, colIdx))
 	for range colHeight {
-		cgf.builder.WriteString(" ")
-		cgf.builder.WriteString(term_utils.MoveCurDown())
+		cg.builder.WriteString(" ")
+		cg.builder.WriteString(term_utils.MoveCurDown())
 	}
-	cgf.builder.WriteString("  ")
+	cg.builder.WriteString("  ")
 
-	cgf.builder.WriteString(term_utils.MoveCurLeft())
-	cgf.builder.WriteString(term_utils.MoveCurLeft())
+	cg.builder.WriteString(term_utils.MoveCurLeft())
+	cg.builder.WriteString(term_utils.MoveCurLeft())
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) printNewCol(colHeight, colIdx int, color string) string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) printNewCol(colHeight, colIdx int, color string) string {
+	defer cg.builder.Reset()
 
-	cgf.builder.WriteString(fmt.Sprintf("%d", colHeight))
+	cg.builder.WriteString(fmt.Sprintf("%d", colHeight))
 
 	// Move cursor to first column segment
-	cgf.builder.WriteString(term_utils.MoveCur(cgf.row+cgf.height-2, cgf.col+colIdx*(cgf.colParams.spaces+1)))
+	cg.builder.WriteString(term_utils.MoveCur(cg.row+cg.height-2, cg.col+colIdx*(cg.colParams.spaces+1)))
 
-	cgf.builder.WriteString(color)
+	cg.builder.WriteString(color)
 	for range colHeight {
-		cgf.builder.WriteString(term_utils.FullBlock)
-		cgf.builder.WriteString(term_utils.MoveCurUp())
+		cg.builder.WriteString(term_utils.FullBlock)
+		cg.builder.WriteString(term_utils.MoveCurUp())
 	}
-	cgf.builder.WriteString(term_utils.ResetCode)
+	cg.builder.WriteString(term_utils.ResetCode)
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) updateDescription(prev, next string) string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) updateDescription(prev, next string) string {
+	defer cg.builder.Reset()
 
-	leftPad := max((cgf.width-term_utils.StringLen(next))/2, 0)
-	cgf.builder.WriteString(term_utils.MoveCur(cgf.DescCol(), cgf.col))
+	leftPad := max((cg.width-term_utils.StringLen(next))/2, 0)
+	cg.builder.WriteString(term_utils.MoveCur(cg.DescCol(), cg.col))
 
-	cgf.builder.WriteString(strings.Repeat(" ", leftPad))
-	cgf.builder.WriteString(next)
+	cg.builder.WriteString(strings.Repeat(" ", leftPad))
+	cg.builder.WriteString(next)
 
 	diff := term_utils.StringLen(prev) - term_utils.StringLen(next)
 	if diff > 0 {
-		cgf.builder.WriteString(strings.Repeat(" ", diff))
+		cg.builder.WriteString(strings.Repeat(" ", diff))
 	}
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) clearGraph() string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) clearGraph() string {
+	defer cg.builder.Reset()
 
-	for i := range cgf.height {
-		cgf.builder.WriteString(term_utils.MoveCur(cgf.row+i, cgf.col))
+	for i := range cg.height {
+		cg.builder.WriteString(term_utils.MoveCur(cg.row+i, cg.col))
 		//HACK: +1 because if last number has more than 1 digit the width is
-		// greater than cgf.width
-		cgf.builder.WriteString(fmt.Sprint(strings.Repeat(" ", cgf.width+1)))
+		// greater than cg.width
+		cg.builder.WriteString(fmt.Sprint(strings.Repeat(" ", cg.width+1)))
 	}
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) clearDescription() string {
-	defer cgf.builder.Reset()
+func (cg *ColumnGraph) clearDescription() string {
+	defer cg.builder.Reset()
 
-	cgf.builder.WriteString(term_utils.MoveCur(cgf.DescCol(), cgf.col))
-	cgf.builder.WriteString(fmt.Sprint(strings.Repeat(" ", cgf.width)))
+	cg.builder.WriteString(term_utils.MoveCur(cg.DescCol(), cg.col))
+	cg.builder.WriteString(fmt.Sprint(strings.Repeat(" ", cg.width)))
 
-	return cgf.builder.String()
+	return cg.builder.String()
 }
 
-func (cgf *ColumnGraph) Reset() {
-	clearGraphInst := cgf.clearGraph()
-	clearDescInst := cgf.clearDescription()
-	printGraphIdleInst := cgf.String()
-	cgf.instrCh <- clearGraphInst + clearDescInst + printGraphIdleInst
+func (cg *ColumnGraph) Reset() {
+	clearGraphInst := cg.clearGraph()
+	clearDescInst := cg.clearDescription()
+	printGraphIdleInst := cg.String()
+	cg.instrCh <- clearGraphInst + clearDescInst + printGraphIdleInst
 }
 
-func (cgf ColumnGraph) DescCol() int {
-	return cgf.row + cgf.height + 1
+func (cg ColumnGraph) DescCol() int {
+	return cg.row + cg.height + 1
 }
